@@ -375,6 +375,17 @@ namespace jgfx::vk {
       return false;
     }
 
+    // retrieve swapchain's images
+    // get image count
+    vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
+    swapChainImages.resize(imageCount);
+    // get actual images
+    vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data());
+
+    // save image format and extent
+    swapChainImageFormat = surfaceFormat.format;
+    swapChainExtent = extent;
+
     return true;
   }
 }

@@ -42,5 +42,8 @@ namespace jgfx::vk {
     VkQueue graphicsQueue; // queue supporting draw operations
     VkQueue presentQueue; // queue supporting presentation operations
     VkSwapchainKHR swapChain;
+    std::vector<VkImage> swapChainImages;
+    VkFormat swapChainImageFormat;
+    VkExtent2D swapChainExtent;
   };
 }
