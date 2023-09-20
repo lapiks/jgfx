@@ -80,6 +80,7 @@ namespace jgfx::vk {
       return false;
     }
 
+    // Instance creation
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = "Hello Triangle";
@@ -107,10 +108,14 @@ namespace jgfx::vk {
     if (!pickPhysicalDevice())
       return false;
 
+    if (!createLogicalDevice())
+      return false;
+
     return true;
   }
 
   void RenderContextVK::shutdown() {
+    vkDestroyDevice(device, nullptr);
     vkDestroyInstance(instance, nullptr);
   }
 
@@ -122,9 +127,11 @@ namespace jgfx::vk {
       return false;
     }
 
+    // enumarate available physical devices
     std::vector<VkPhysicalDevice> devices(deviceCount);
     vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
+    // check for the first suitable device
     for (const auto& device : devices) {
       if (isDeviceSuitable(device)) {
         physicalDevice = device;
@@ -133,5 +140,41 @@ namespace jgfx::vk {
     }
 
     return false;
+  }
+
+  bool RenderContextVK::createLogicalDevice()
+  {
+    // Check for available queue types
+    std::optional<uint32_t> indices = findQueueFamilies(physicalDevice);
+
+    // Queue creation
+    VkDeviceQueueCreateInfo queueCreateInfo{};
+    queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queueCreateInfo.queueFamilyIndex = indices.value();
+    queueCreateInfo.queueCount = 1;
+    float queuePriority = 1.0f;
+    queueCreateInfo.pQueuePriorities = &queuePriority;
+
+    // define needed features
+    VkPhysicalDeviceFeatures deviceFeatures{};
+
+    // Logical device creation
+    VkDeviceCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    createInfo.pQueueCreateInfos = &queueCreateInfo;
+    createInfo.queueCreateInfoCount = 1;
+    createInfo.pEnabledFeatures = &deviceFeatures;
+    createInfo.enabledExtensionCount = 0;
+    // Device level's validation layers are deprecated
+    createInfo.enabledLayerCount = 0;
+
+    if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
+      return false;
+    }
+
+    // Get queue created alongside logical device
+    vkGetDeviceQueue(device, indices.value(), 0, &graphicsQueue);
+
+    return true;
   }
 }
