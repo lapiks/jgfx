@@ -3,6 +3,7 @@
 #include <vulkan/vulkan.h>
 
 #include <optional>
+#include <vector>
 
 namespace jgfx {
   struct CreateInfo;
@@ -23,8 +24,8 @@ namespace jgfx::vk {
     bool init(const CreateInfo& createInfo);
     void shutdown();
     bool createSurface(const PlatformData& platformData);
-    bool pickPhysicalDevice(VkSurfaceKHR surface);
-    bool createLogicalDevice();
+    bool pickPhysicalDevice(VkSurfaceKHR surface, const std::vector<const char*>& deviceExtensions);
+    bool createLogicalDevice(const std::vector<const char*>& deviceExtensions);
 
   private:
     VkInstance instance;

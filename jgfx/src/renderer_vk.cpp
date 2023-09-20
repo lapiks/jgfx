@@ -89,14 +89,9 @@ namespace jgfx::vk {
     return requiredExtensionsSet.empty();
   }
 
-  bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
-    // We need the swap chain extension for drawing to screen
-    const std::vector<const char*> deviceExtensions = {
-      VK_KHR_SWAPCHAIN_EXTENSION_NAME
-    };
-
+  bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface, const std::vector<const char*>& requiredExtensions) {
     QueueFamilyIndices indices = findQueueFamilies(device, surface);
-    bool extensionsSupported = checkDeviceExtensionSupport(device, deviceExtensions);
+    bool extensionsSupported = checkDeviceExtensionSupport(device, requiredExtensions);
 
     return indices.isComplete() && extensionsSupported;
   }
@@ -144,10 +139,15 @@ namespace jgfx::vk {
     if (!createSurface(createInfo.platformData))
       return false;
 
-    if (!pickPhysicalDevice(surface))
+    // We need the swap chain extension for drawing to screen
+    const std::vector<const char*> deviceExtensions = {
+      VK_KHR_SWAPCHAIN_EXTENSION_NAME
+    };
+
+    if (!pickPhysicalDevice(surface, deviceExtensions))
       return false;
 
-    if (!createLogicalDevice())
+    if (!createLogicalDevice(deviceExtensions))
       return false;
 
     return true;
@@ -173,7 +173,7 @@ namespace jgfx::vk {
     return true;
   }
 
-  bool RenderContextVK::pickPhysicalDevice(VkSurfaceKHR surface) {
+  bool RenderContextVK::pickPhysicalDevice(VkSurfaceKHR surface, const std::vector<const char*>& deviceExtensions) {
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
@@ -187,7 +187,7 @@ namespace jgfx::vk {
 
     // check for the first suitable device
     for (const auto& device : devices) {
-      if (isDeviceSuitable(device, surface)) {
+      if (isDeviceSuitable(device, surface, deviceExtensions)) {
         physicalDevice = device;
         return true;
       }
@@ -196,7 +196,7 @@ namespace jgfx::vk {
     return false;
   }
 
-  bool RenderContextVK::createLogicalDevice()
+  bool RenderContextVK::createLogicalDevice(const std::vector<const char*>& deviceExtensions)
   {
     // Check for available queue families
     QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface);
@@ -226,7 +226,8 @@ namespace jgfx::vk {
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
     createInfo.pQueueCreateInfos = queueCreateInfos.data();
     createInfo.pEnabledFeatures = &deviceFeatures;
-    createInfo.enabledExtensionCount = 0;
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
+    createInfo.ppEnabledExtensionNames = deviceExtensions.data();
     // Device level's validation layers are deprecated
     createInfo.enabledLayerCount = 0;
 
