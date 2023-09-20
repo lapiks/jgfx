@@ -1,3 +1,5 @@
+#define VK_USE_PLATFORM_WIN32_KHR
+
 #include "renderer_vk.h"
 
 #include "jgfx/jgfx.h"
@@ -105,6 +107,9 @@ namespace jgfx::vk {
 
     VkResult result = vkCreateInstance(&vkCreateInfo, nullptr, &instance);
 
+    if (!createSurface(createInfo.platformData))
+      return false;
+
     if (!pickPhysicalDevice())
       return false;
 
@@ -116,7 +121,20 @@ namespace jgfx::vk {
 
   void RenderContextVK::shutdown() {
     vkDestroyDevice(device, nullptr);
+    vkDestroySurfaceKHR(instance, surface, nullptr);
     vkDestroyInstance(instance, nullptr);
+  }
+
+  bool RenderContextVK::createSurface(const PlatformData& platformData)
+  {
+    VkWin32SurfaceCreateInfoKHR createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+    createInfo.hwnd = (HWND)platformData.nativeWindowHandle;
+    createInfo.hinstance = GetModuleHandle(nullptr);
+
+    if (vkCreateWin32SurfaceKHR(instance, &createInfo, nullptr, &surface) != VK_SUCCESS) {
+      return false;
+    }
   }
 
   bool RenderContextVK::pickPhysicalDevice() {
