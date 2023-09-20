@@ -1,16 +1,20 @@
 #pragma once
 
+#include <stdint.h>
+
 namespace jgfx {
   struct PlatformData {
     void* nativeWindowHandle = nullptr;
   };
 
-  struct Init {
+  struct CreateInfo {
     PlatformData platformData;
+    uint32_t extensionCount = 0;
+    const char** extensionNames = nullptr;
   };
 
   struct Context {
-    bool init(const Init& init);
+    bool init(const CreateInfo& init);
     void shutdown();
   };
 }

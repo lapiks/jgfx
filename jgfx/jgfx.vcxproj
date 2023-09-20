@@ -20,10 +20,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\jgfx.cpp" />
+    <ClCompile Include="src\jgfx_impl.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\renderer_vk.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\jgfx\jgfx.h" />
+    <ClInclude Include="src\jgfx_impl.h" />
+    <ClInclude Include="src\renderer_vk.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
@@ -112,6 +116,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\Users\dheni\source\repos\jgfx\jgfx\include;C:\Program Files\VulkanSDK\1.3.261.1\Include;C:\Users\dheni\source\repos\jgfx\jgfx\3rdparty\glm-0.9.9.8\glm;C:\Users\dheni\source\repos\jgfx\jgfx\3rdparty\glfw-3.3.8.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -129,6 +134,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\Users\dheni\source\repos\jgfx\jgfx\include;C:\Program Files\VulkanSDK\1.3.261.1\Include;C:\Users\dheni\source\repos\jgfx\jgfx\3rdparty\glm-0.9.9.8\glm;C:\Users\dheni\source\repos\jgfx\jgfx\3rdparty\glfw-3.3.8.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

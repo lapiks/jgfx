@@ -34,14 +34,18 @@ public:
 
     std::cout << extensionCount << " extensions supported\n";
 
+    const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&extensionCount);
+
     jgfx::PlatformData pd;
     pd.nativeWindowHandle = glfwGetWin32Window(window);
 
-    jgfx::Init init;
-    init.platformData = pd;
+    jgfx::CreateInfo initInfos;
+    initInfos.platformData = pd;
+    initInfos.extensionCount = extensionCount;
+    initInfos.extensionNames = glfwExtensions;
 
     jgfx::Context ctx;
-    ctx.init(init);
+    ctx.init(initInfos);
   }
 
   void draw() {
