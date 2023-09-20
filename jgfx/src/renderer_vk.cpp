@@ -5,7 +5,7 @@
 #include "jgfx/jgfx.h"
 
 #include <vector>
-#include <optional>
+#include <set>
 
 namespace jgfx::vk {
   bool checkValidationLayerSupport(const std::vector<const char*>& validationLayers) {
@@ -33,8 +33,8 @@ namespace jgfx::vk {
     return true;
   }
 
-  std::optional<uint32_t> findQueueFamilies(VkPhysicalDevice device) {
-    std::optional<uint32_t> indices;
+  QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) {
+    QueueFamilyIndices indices;
     // Logic to find queue family indices to populate struct with
 
     uint32_t queueFamilyCount = 0;
@@ -45,9 +45,20 @@ namespace jgfx::vk {
 
     int i = 0;
     for (const auto& queueFamily : queueFamilies) {
+      // check if the queue family has support for graphics
       if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-        indices = i;
+        indices.graphicsFamily = i;
       }
+
+      // check if the queue family has support for surface presentation
+      VkBool32 presentSupport = false;
+      vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+      if (presentSupport) {
+        indices.presentFamily = i;
+      }
+
+      if (indices.isComplete())
+        return indices;
 
       i++;
     }
@@ -55,16 +66,16 @@ namespace jgfx::vk {
     return indices;
   }
 
-  bool isDeviceSuitable(VkPhysicalDevice device) {
+  bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
     VkPhysicalDeviceProperties deviceProperties;
     vkGetPhysicalDeviceProperties(device, &deviceProperties);
 
     VkPhysicalDeviceFeatures deviceFeatures;
     vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
 
-    std::optional<uint32_t> indices = findQueueFamilies(device);
+    QueueFamilyIndices indices = findQueueFamilies(device, surface);
 
-    return indices.has_value();
+    return indices.isComplete();
   }
 
   bool RenderContextVK::init(const CreateInfo& createInfo) {
@@ -73,8 +84,8 @@ namespace jgfx::vk {
 #else
     const bool enableValidationLayers = true;
 #endif
-
     const std::vector<const char*> validationLayers = {
+
       "VK_LAYER_KHRONOS_validation"
     };
 
@@ -110,7 +121,7 @@ namespace jgfx::vk {
     if (!createSurface(createInfo.platformData))
       return false;
 
-    if (!pickPhysicalDevice())
+    if (!pickPhysicalDevice(surface))
       return false;
 
     if (!createLogicalDevice())
@@ -135,9 +146,11 @@ namespace jgfx::vk {
     if (vkCreateWin32SurfaceKHR(instance, &createInfo, nullptr, &surface) != VK_SUCCESS) {
       return false;
     }
+
+    return true;
   }
 
-  bool RenderContextVK::pickPhysicalDevice() {
+  bool RenderContextVK::pickPhysicalDevice(VkSurfaceKHR surface) {
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
@@ -151,7 +164,7 @@ namespace jgfx::vk {
 
     // check for the first suitable device
     for (const auto& device : devices) {
-      if (isDeviceSuitable(device)) {
+      if (isDeviceSuitable(device, surface)) {
         physicalDevice = device;
         return true;
       }
@@ -162,16 +175,24 @@ namespace jgfx::vk {
 
   bool RenderContextVK::createLogicalDevice()
   {
-    // Check for available queue types
-    std::optional<uint32_t> indices = findQueueFamilies(physicalDevice);
+    // Check for available queue families
+    QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface);
 
-    // Queue creation
-    VkDeviceQueueCreateInfo queueCreateInfo{};
-    queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queueCreateInfo.queueFamilyIndex = indices.value();
-    queueCreateInfo.queueCount = 1;
+    // Queues creation
+    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+    std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
+
     float queuePriority = 1.0f;
-    queueCreateInfo.pQueuePriorities = &queuePriority;
+    // For each unique queue family
+    for (uint32_t queueFamily : uniqueQueueFamilies) {
+      // Create an info struct
+      VkDeviceQueueCreateInfo queueCreateInfo{};
+      queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+      queueCreateInfo.queueFamilyIndex = queueFamily;
+      queueCreateInfo.queueCount = 1;
+      queueCreateInfo.pQueuePriorities = &queuePriority;
+      queueCreateInfos.push_back(queueCreateInfo);
+    }
 
     // define needed features
     VkPhysicalDeviceFeatures deviceFeatures{};
@@ -179,8 +200,8 @@ namespace jgfx::vk {
     // Logical device creation
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    createInfo.pQueueCreateInfos = &queueCreateInfo;
-    createInfo.queueCreateInfoCount = 1;
+    createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+    createInfo.pQueueCreateInfos = queueCreateInfos.data();
     createInfo.pEnabledFeatures = &deviceFeatures;
     createInfo.enabledExtensionCount = 0;
     // Device level's validation layers are deprecated
@@ -190,8 +211,9 @@ namespace jgfx::vk {
       return false;
     }
 
-    // Get queue created alongside logical device
-    vkGetDeviceQueue(device, indices.value(), 0, &graphicsQueue);
+    // Get queues created alongside logical device
+    vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
+    vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
 
     return true;
   }
