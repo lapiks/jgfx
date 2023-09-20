@@ -8,6 +8,8 @@
 
 #include <iostream>
 
+#include "jgfx/jgfx.h"
+
 int main() {
   glfwInit();
 
@@ -22,6 +24,9 @@ int main() {
   glm::mat4 matrix;
   glm::vec4 vec;
   auto test = matrix * vec;
+
+  jgfx::Context ctx;
+  ctx.init();
 
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();
