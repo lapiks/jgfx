@@ -2,9 +2,53 @@
 
 #include "jgfx/jgfx.h"
 
+#include <vector>
+
 namespace jgfx::vk {
-  bool RenderContextVK::init(const CreateInfo& createInfo)
-  {
+  bool checkValidationLayerSupport(const std::vector<const char*>& validationLayers) {
+    uint32_t layerCount;
+    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+    std::vector<VkLayerProperties> availableLayers(layerCount);
+    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+    for (const char* layerName : validationLayers) {
+      bool layerFound = false;
+
+      for (const auto& layerProperties : availableLayers) {
+        if (strcmp(layerName, layerProperties.layerName) == 0) {
+          layerFound = true;
+          break;
+        }
+      }
+
+      if (!layerFound) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  void pickPhysicalDevice() {
+
+  }
+
+  bool RenderContextVK::init(const CreateInfo& createInfo) {
+#ifdef NDEBUG
+    const bool enableValidationLayers = false;
+#else
+    const bool enableValidationLayers = true;
+#endif
+
+    const std::vector<const char*> validationLayers = {
+      "VK_LAYER_KHRONOS_validation"
+    };
+
+    if (enableValidationLayers && !checkValidationLayerSupport(validationLayers)) {
+      return false;
+    }
+
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = "Hello Triangle";
@@ -18,15 +62,23 @@ namespace jgfx::vk {
     vkCreateInfo.pApplicationInfo = &appInfo;
     vkCreateInfo.enabledExtensionCount = createInfo.extensionCount;
     vkCreateInfo.ppEnabledExtensionNames = createInfo.extensionNames;
-    vkCreateInfo.enabledLayerCount = 0;
+
+    if (enableValidationLayers) {
+      vkCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+      vkCreateInfo.ppEnabledLayerNames = validationLayers.data();
+    }
+    else {
+      vkCreateInfo.enabledLayerCount = 0;
+    }
 
     VkResult result = vkCreateInstance(&vkCreateInfo, nullptr, &instance);
+
+    pickPhysicalDevice();
 
     return true;
   }
 
-  void RenderContextVK::shutdown()
-  {
+  void RenderContextVK::shutdown() {
     vkDestroyInstance(instance, nullptr);
   }
 }

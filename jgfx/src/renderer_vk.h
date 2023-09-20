@@ -8,11 +8,11 @@ namespace jgfx {
 
 namespace jgfx::vk { 
   struct RenderContextVK {
-    VkInstance instance;
-    // device
-    // swap chain
-
     bool init(const CreateInfo& createInfo);
     void shutdown();
+
+  private:
+    VkInstance instance;
+    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
   };
 }
