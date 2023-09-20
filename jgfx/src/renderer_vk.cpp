@@ -27,6 +27,6 @@ namespace jgfx::vk {
 
   void RenderContextVK::shutdown()
   {
-
+    vkDestroyInstance(instance, nullptr);
   }
 }

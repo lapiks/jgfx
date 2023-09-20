@@ -44,7 +44,6 @@ public:
     initInfos.extensionCount = extensionCount;
     initInfos.extensionNames = glfwExtensions;
 
-    jgfx::Context ctx;
     ctx.init(initInfos);
   }
 
@@ -58,19 +57,21 @@ public:
   }
 
   void shutdown() {
+    ctx.shutdown();
     glfwDestroyWindow(window);
     glfwTerminate();
   }
   
 private:
   GLFWwindow* window = nullptr;
+  jgfx::Context ctx;
 };
 
 int main() {
   App app;
   app.init(); 
-
   app.draw();
+  app.shutdown();
 
   return 0;
 }
