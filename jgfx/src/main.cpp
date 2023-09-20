@@ -1,6 +1,9 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include "GLFW/glfw3native.h"
+
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/vec4.hpp>
@@ -10,31 +13,60 @@
 
 #include "jgfx/jgfx.h"
 
-int main() {
+const uint32_t WIDTH = 800;
+const uint32_t HEIGHT = 600;
+
+GLFWwindow* initWindow() {
   glfwInit();
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  GLFWwindow* window = glfwCreateWindow(800, 600, "jgfx", nullptr, nullptr);
+  glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+  return glfwCreateWindow(WIDTH, HEIGHT, "jgfx", nullptr, nullptr);
+}
 
-  uint32_t extensionCount = 0;
-  vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+class App {
+public:
+  void init() {
+    window = initWindow();
 
-  std::cout << extensionCount << " extensions supported\n";
+    uint32_t extensionCount = 0;
+    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
 
-  glm::mat4 matrix;
-  glm::vec4 vec;
-  auto test = matrix * vec;
+    std::cout << extensionCount << " extensions supported\n";
 
-  jgfx::Context ctx;
-  ctx.init();
+    jgfx::PlatformData pd;
+    pd.nativeWindowHandle = glfwGetWin32Window(window);
 
-  while (!glfwWindowShouldClose(window)) {
-    glfwPollEvents();
+    jgfx::Init init;
+    init.platformData = pd;
+
+    jgfx::Context ctx;
+    ctx.init(init);
   }
 
-  glfwDestroyWindow(window);
+  void draw() {
+    while (!glfwWindowShouldClose(window)) {
+      glfwPollEvents();
 
-  glfwTerminate();
+      // render
+
+    }
+  }
+
+  void shutdown() {
+    glfwDestroyWindow(window);
+    glfwTerminate();
+  }
+  
+private:
+  GLFWwindow* window = nullptr;
+};
+
+int main() {
+  App app;
+  app.init(); 
+
+  app.draw();
 
   return 0;
 }
