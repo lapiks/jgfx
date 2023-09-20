@@ -3,6 +3,7 @@
 #include "jgfx/jgfx.h"
 
 #include <vector>
+#include <optional>
 
 namespace jgfx::vk {
   bool checkValidationLayerSupport(const std::vector<const char*>& validationLayers) {
@@ -30,8 +31,38 @@ namespace jgfx::vk {
     return true;
   }
 
-  void pickPhysicalDevice() {
+  std::optional<uint32_t> findQueueFamilies(VkPhysicalDevice device) {
+    std::optional<uint32_t> indices;
+    // Logic to find queue family indices to populate struct with
 
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+    int i = 0;
+    for (const auto& queueFamily : queueFamilies) {
+      if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+        indices = i;
+      }
+
+      i++;
+    }
+
+    return indices;
+  }
+
+  bool isDeviceSuitable(VkPhysicalDevice device) {
+    VkPhysicalDeviceProperties deviceProperties;
+    vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+    VkPhysicalDeviceFeatures deviceFeatures;
+    vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+    std::optional<uint32_t> indices = findQueueFamilies(device);
+
+    return indices.has_value();
   }
 
   bool RenderContextVK::init(const CreateInfo& createInfo) {
@@ -73,12 +104,34 @@ namespace jgfx::vk {
 
     VkResult result = vkCreateInstance(&vkCreateInfo, nullptr, &instance);
 
-    pickPhysicalDevice();
+    if (!pickPhysicalDevice())
+      return false;
 
     return true;
   }
 
   void RenderContextVK::shutdown() {
     vkDestroyInstance(instance, nullptr);
+  }
+
+  bool RenderContextVK::pickPhysicalDevice() {
+    uint32_t deviceCount = 0;
+    vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+
+    if (deviceCount == 0) {
+      return false;
+    }
+
+    std::vector<VkPhysicalDevice> devices(deviceCount);
+    vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+
+    for (const auto& device : devices) {
+      if (isDeviceSuitable(device)) {
+        physicalDevice = device;
+        return true;
+      }
+    }
+
+    return false;
   }
 }
