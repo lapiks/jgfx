@@ -33,6 +33,7 @@ namespace jgfx::vk {
     bool pickPhysicalDevice(VkSurfaceKHR surface, const std::vector<const char*>& deviceExtensions);
     bool createLogicalDevice(const std::vector<const char*>& deviceExtensions);
     bool createSwapChain(const InitInfo& initInfo);
+    bool createImageViews();
 
   private:
     VkInstance instance;
@@ -45,5 +46,6 @@ namespace jgfx::vk {
     std::vector<VkImage> swapChainImages;
     VkFormat swapChainImageFormat;
     VkExtent2D swapChainExtent;
+    std::vector<VkImageView> swapChainImageViews;
   };
 }
