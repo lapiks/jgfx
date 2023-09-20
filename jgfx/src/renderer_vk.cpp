@@ -6,6 +6,7 @@
 
 #include <vector>
 #include <set>
+#include <string>
 
 namespace jgfx::vk {
   bool checkValidationLayerSupport(const std::vector<const char*>& validationLayers) {
@@ -66,16 +67,38 @@ namespace jgfx::vk {
     return indices;
   }
 
-  bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
-    VkPhysicalDeviceProperties deviceProperties;
-    vkGetPhysicalDeviceProperties(device, &deviceProperties);
+  /// <summary>
+  /// Check if the given device supports the requiredExtensions 
+  /// </summary>
+  /// <param name="device"></param>
+  /// <param name="requiredExtensions"></param>
+  /// <returns></returns>
+  bool checkDeviceExtensionSupport(VkPhysicalDevice device, const std::vector<const char*>& requiredExtensions) {
+    uint32_t extensionCount;
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
 
-    VkPhysicalDeviceFeatures deviceFeatures;
-    vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+
+    std::set<std::string> requiredExtensionsSet(requiredExtensions.begin(), requiredExtensions.end());
+
+    for (const auto& extension : availableExtensions) {
+      requiredExtensionsSet.erase(extension.extensionName);
+    }
+
+    return requiredExtensionsSet.empty();
+  }
+
+  bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
+    // We need the swap chain extension for drawing to screen
+    const std::vector<const char*> deviceExtensions = {
+      VK_KHR_SWAPCHAIN_EXTENSION_NAME
+    };
 
     QueueFamilyIndices indices = findQueueFamilies(device, surface);
+    bool extensionsSupported = checkDeviceExtensionSupport(device, deviceExtensions);
 
-    return indices.isComplete();
+    return indices.isComplete() && extensionsSupported;
   }
 
   bool RenderContextVK::init(const CreateInfo& createInfo) {
