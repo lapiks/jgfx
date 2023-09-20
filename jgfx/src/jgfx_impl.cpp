@@ -4,8 +4,8 @@
 #include "jgfx/jgfx.h"
 
 namespace jgfx {
-  bool ContextImpl::init(const CreateInfo& createInfo) {
-    return vkCtx.init(createInfo);
+  bool ContextImpl::init(const InitInfo& initInfo) {
+    return vkCtx.init(initInfo);
   }
 
   void ContextImpl::shutdown() {

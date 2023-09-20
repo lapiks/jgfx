@@ -33,5 +33,8 @@
     <ClInclude Include="src\jgfx_impl.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\utils_vk.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

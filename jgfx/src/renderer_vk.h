@@ -6,7 +6,7 @@
 #include <vector>
 
 namespace jgfx {
-  struct CreateInfo;
+  struct InitInfo;
   struct PlatformData;
 }
 
@@ -20,19 +20,27 @@ namespace jgfx::vk {
     }
   };
 
+  struct SwapChainSupportDetails {
+    VkSurfaceCapabilitiesKHR capabilities;
+    std::vector<VkSurfaceFormatKHR> formats;
+    std::vector<VkPresentModeKHR> presentModes;
+  };
+
   struct RenderContextVK {
-    bool init(const CreateInfo& createInfo);
+    bool init(const InitInfo& createInfo);
     void shutdown();
     bool createSurface(const PlatformData& platformData);
     bool pickPhysicalDevice(VkSurfaceKHR surface, const std::vector<const char*>& deviceExtensions);
     bool createLogicalDevice(const std::vector<const char*>& deviceExtensions);
+    bool createSwapChain(const InitInfo& initInfo);
 
   private:
     VkInstance instance;
     VkSurfaceKHR surface;
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkDevice device;
-    VkQueue graphicsQueue;
-    VkQueue presentQueue;
+    VkQueue graphicsQueue; // queue supporting draw operations
+    VkQueue presentQueue; // queue supporting presentation operations
+    VkSwapchainKHR swapChain;
   };
 }

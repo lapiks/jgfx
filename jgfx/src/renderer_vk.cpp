@@ -7,6 +7,9 @@
 #include <vector>
 #include <set>
 #include <string>
+#include <limits>
+#include <algorithm>
+#include <cstdint>
 
 namespace jgfx::vk {
   bool checkValidationLayerSupport(const std::vector<const char*>& validationLayers) {
@@ -67,6 +70,69 @@ namespace jgfx::vk {
     return indices;
   }
 
+  VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
+    // Check for SRGB8 color format
+    for (const auto& availableFormat : availableFormats) {
+      if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+        return availableFormat;
+      }
+    }
+
+    return availableFormats[0];
+  }
+
+  VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
+    for (const auto& availablePresentMode : availablePresentModes) {
+      if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+        return availablePresentMode;
+      }
+    }
+
+    return VK_PRESENT_MODE_FIFO_KHR;
+  }
+
+  VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, const InitInfo& initInfo) {
+    // Compile error here :/
+    /*if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+      return capabilities.currentExtent;
+    }
+    else */ {
+      VkExtent2D actualExtent = {
+          static_cast<uint32_t>(initInfo.resolutionWidth),
+          static_cast<uint32_t>(initInfo.resolutionHeight)
+      };
+
+      actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+      actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+
+      return actualExtent;
+    }
+  }
+
+  SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface) {
+    SwapChainSupportDetails details;
+
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
+
+    uint32_t formatCount;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
+
+    if (formatCount != 0) {
+      details.formats.resize(formatCount);
+      vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
+    }
+
+    uint32_t presentModeCount;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
+
+    if (presentModeCount != 0) {
+      details.presentModes.resize(presentModeCount);
+      vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes.data());
+    }
+
+    return details;
+  }
+
   /// <summary>
   /// Check if the given device supports the requiredExtensions 
   /// </summary>
@@ -91,12 +157,19 @@ namespace jgfx::vk {
 
   bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface, const std::vector<const char*>& requiredExtensions) {
     QueueFamilyIndices indices = findQueueFamilies(device, surface);
+
     bool extensionsSupported = checkDeviceExtensionSupport(device, requiredExtensions);
 
-    return indices.isComplete() && extensionsSupported;
+    bool swapChainSupported = false;
+    if (extensionsSupported) {
+      SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device, surface);
+      swapChainSupported = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+    }
+
+    return indices.isComplete() && extensionsSupported && swapChainSupported;
   }
 
-  bool RenderContextVK::init(const CreateInfo& createInfo) {
+  bool RenderContextVK::init(const InitInfo& initInfo) {
 #ifdef NDEBUG
     const bool enableValidationLayers = false;
 #else
@@ -123,8 +196,8 @@ namespace jgfx::vk {
     VkInstanceCreateInfo vkCreateInfo{};
     vkCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     vkCreateInfo.pApplicationInfo = &appInfo;
-    vkCreateInfo.enabledExtensionCount = createInfo.extensionCount;
-    vkCreateInfo.ppEnabledExtensionNames = createInfo.extensionNames;
+    vkCreateInfo.enabledExtensionCount = initInfo.extensionCount;
+    vkCreateInfo.ppEnabledExtensionNames = initInfo.extensionNames;
 
     if (enableValidationLayers) {
       vkCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
@@ -136,7 +209,7 @@ namespace jgfx::vk {
 
     VkResult result = vkCreateInstance(&vkCreateInfo, nullptr, &instance);
 
-    if (!createSurface(createInfo.platformData))
+    if (!createSurface(initInfo.platformData))
       return false;
 
     // We need the swap chain extension for drawing to screen
@@ -150,10 +223,14 @@ namespace jgfx::vk {
     if (!createLogicalDevice(deviceExtensions))
       return false;
 
+    if (!createSwapChain(initInfo))
+      return false;
+
     return true;
   }
 
   void RenderContextVK::shutdown() {
+    vkDestroySwapchainKHR(device, swapChain, nullptr);
     vkDestroyDevice(device, nullptr);
     vkDestroySurfaceKHR(instance, surface, nullptr);
     vkDestroyInstance(instance, nullptr);
@@ -238,6 +315,65 @@ namespace jgfx::vk {
     // Get queues created alongside logical device
     vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
     vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
+
+    return true;
+  }
+
+  bool RenderContextVK::createSwapChain(const InitInfo& initInfo)
+  {
+    // Check what is supported for the swap chain
+    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice, surface);
+
+    // choose format
+    VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
+    // choose present mode
+    VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
+    // choose extent
+    VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities, initInfo);
+
+    // Recommended image count is at least the min capability + 1
+    uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
+
+    // check we don't exceed the capabilities' maximum number of images 
+    if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
+      // clamp to max
+      imageCount = swapChainSupport.capabilities.maxImageCount;
+    }
+
+    // Swap chain construction
+    VkSwapchainCreateInfoKHR createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    createInfo.surface = surface;
+    createInfo.minImageCount = imageCount;
+    createInfo.imageFormat = surfaceFormat.format;
+    createInfo.imageColorSpace = surfaceFormat.colorSpace;
+    createInfo.imageExtent = extent;
+    createInfo.imageArrayLayers = 1;
+    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // todo: VK_IMAGE_USAGE_TRANSFER_DST_BIT to enable post processing
+
+    QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface);
+    uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
+
+    if (indices.graphicsFamily != indices.presentFamily) {
+      createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT; // an image can be used by multiple queue families at the same time
+      createInfo.queueFamilyIndexCount = 2;
+      createInfo.pQueueFamilyIndices = queueFamilyIndices;
+    }
+    else {
+      createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE; // an image is owned by one queue family at a time
+      createInfo.queueFamilyIndexCount = 0; // Optional
+      createInfo.pQueueFamilyIndices = nullptr; // Optional
+    }
+
+    createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
+    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    createInfo.presentMode = presentMode;
+    createInfo.clipped = VK_TRUE;
+    createInfo.oldSwapchain = VK_NULL_HANDLE;
+
+    if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain) != VK_SUCCESS) {
+      return false;
+    }
 
     return true;
   }

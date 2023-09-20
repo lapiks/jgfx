@@ -4,7 +4,7 @@
 
 namespace jgfx {
   struct ContextImpl {
-    bool init(const CreateInfo& createInfo);
+    bool init(const InitInfo& initInfo);
     void shutdown();
 
   private:

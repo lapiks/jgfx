@@ -5,8 +5,8 @@ namespace jgfx
 {
   static ContextImpl ctx; 
 
-  bool Context::init(const CreateInfo& init) {
-    return ctx.init(init);
+  bool Context::init(const InitInfo& initInfo) {
+    return ctx.init(initInfo);
   }
 
   void Context::shutdown() {

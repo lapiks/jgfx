@@ -39,7 +39,7 @@ public:
     jgfx::PlatformData pd;
     pd.nativeWindowHandle = glfwGetWin32Window(window);
 
-    jgfx::CreateInfo initInfos;
+    jgfx::InitInfo initInfos;
     initInfos.platformData = pd;
     initInfos.extensionCount = extensionCount;
     initInfos.extensionNames = glfwExtensions;
