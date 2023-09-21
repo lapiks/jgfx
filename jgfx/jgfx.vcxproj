@@ -23,11 +23,13 @@
     <ClCompile Include="src\jgfx_impl.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\renderer_vk.cpp" />
+    <ClCompile Include="src\utils_vk.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\jgfx\jgfx.h" />
     <ClInclude Include="src\jgfx_impl.h" />
     <ClInclude Include="src\renderer_vk.h" />
+    <ClInclude Include="src\structs_vk.h" />
     <ClInclude Include="src\utils_vk.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
