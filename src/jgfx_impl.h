@@ -16,6 +16,6 @@ namespace jgfx {
   private:
     std::unique_ptr<vk::RenderContextVK> vkCtx;
 
-    HandleAllocator shaderHandleAllocator;
+    HandleAllocator<ShaderHandle> shaderHandleAllocator;
   };
 }

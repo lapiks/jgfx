@@ -19,7 +19,7 @@ namespace jgfx {
 
   ShaderHandle ContextImpl::newShader(const std::vector<char>& bytecode) {
     ShaderHandle handle;
-    allocate(handle, shaderHandleAllocator);
+    shaderHandleAllocator.allocate(handle);
 
     vkCtx->newShader(handle, bytecode);
 

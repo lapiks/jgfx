@@ -4,13 +4,17 @@
 #include <vector>
 
 namespace jgfx {
+  template<typename T>
   struct HandleAllocator {
     uint16_t currentId = 0;
+    inline void allocate(T handle) {
+      handle.id = currentId++;
+    }
   };
+  
 
   #define JGFX_HANDLE(name) \
-	struct name { uint16_t id; }; \
-  inline void allocate(name handle, HandleAllocator& allocator) { handle.id = allocator.currentId++; }
+	struct name { uint16_t id; };
 
   struct PlatformData {
     void* nativeWindowHandle = nullptr;
