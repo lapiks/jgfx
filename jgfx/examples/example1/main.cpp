@@ -51,8 +51,9 @@ public:
     std::vector<char> vertBin = utils::readFile("C:/Users/dheni/source/repos/jgfx/jgfx/examples/shaders/shader.vert");
     std::vector<char> fragBin = utils::readFile("C:/Users/dheni/source/repos/jgfx/jgfx/examples/shaders/shader.frag");
 
-    ctx.newShader(vertBin);
-    ctx.newShader(fragBin);
+    jgfx::ShaderHandle vs = ctx.newShader(vertBin);
+    jgfx::ShaderHandle fs = ctx.newShader(fragBin);
+
   }
 
   void draw() {

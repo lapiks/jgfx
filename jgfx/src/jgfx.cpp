@@ -14,7 +14,7 @@ namespace jgfx
   }
 
   ShaderHandle Context::newShader(const std::vector<char>& binData) {
-    return ctx.newShader();
+    return ctx.newShader(binData);
   }
 
   ProgramHandle Context::newProgram(const std::vector<char>& binData) {

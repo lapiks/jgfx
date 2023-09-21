@@ -5,15 +5,25 @@
 
 namespace jgfx {
   bool ContextImpl::init(const InitInfo& initInfo) {
-    return vkCtx.init(initInfo);
+    if (vkCtx) // already initialized
+      return false;
+
+    vkCtx = std::make_unique<vk::RenderContextVK>();
+
+    return vkCtx->init(initInfo);
   }
 
   void ContextImpl::shutdown() {
-    vkCtx.shutdown();
+    vkCtx->shutdown();
   }
 
-  ShaderHandle ContextImpl::newShader() {
-    return ShaderHandle();
+  ShaderHandle ContextImpl::newShader(const std::vector<char>& bytecode) {
+    ShaderHandle handle;
+    allocate(handle, shaderHandleAllocator);
+
+    vkCtx->newShader(handle, bytecode);
+
+    return handle;
   }
 
   ProgramHandle ContextImpl::newProgram() {

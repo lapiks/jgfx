@@ -3,10 +3,14 @@
 #include <stdint.h>
 #include <vector>
 
-namespace jgfx 
-{
+namespace jgfx {
+  struct HandleAllocator {
+    uint16_t currentId = 0;
+  };
+
   #define JGFX_HANDLE(name) \
-	struct name { uint16_t id; };
+	struct name { uint16_t id; }; \
+  inline void allocate(name handle, HandleAllocator& allocator) { handle.id = allocator.currentId++; }
 
   struct PlatformData {
     void* nativeWindowHandle = nullptr;

@@ -3,15 +3,19 @@
 #include "renderer_vk.h"
 #include "jgfx/jgfx.h"
 
+#include <memory>
+
 namespace jgfx {
   struct ContextImpl {
     bool init(const InitInfo& initInfo);
     void shutdown();
 
-    ShaderHandle newShader();
+    ShaderHandle newShader(const std::vector<char>& bytecode);
     ProgramHandle newProgram();
 
   private:
-    vk::RenderContextVK vkCtx;
+    std::unique_ptr<vk::RenderContextVK> vkCtx;
+
+    HandleAllocator shaderHandleAllocator;
   };
 }

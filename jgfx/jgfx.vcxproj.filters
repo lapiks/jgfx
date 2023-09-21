@@ -39,5 +39,8 @@
     <ClInclude Include="src\structs_vk.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\renderer.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -2,7 +2,9 @@
 
 #include <vulkan/vulkan.h>
 
-#include <vector>
+#include "renderer.h"
+
+constexpr int MAX_SHADERS = 512;
 
 namespace jgfx {
   struct InitInfo;
@@ -10,9 +12,15 @@ namespace jgfx {
 }
 
 namespace jgfx::vk { 
-  struct RenderContextVK {
-    bool init(const InitInfo& createInfo);
-    void shutdown();
+  struct ShaderVK {
+    bool create(const std::vector<char>& bytecode, VkDevice device);
+
+    VkShaderModule _module;
+  };
+
+  struct RenderContextVK : public RenderContext {
+    bool init(const InitInfo& createInfo) override;
+    void shutdown() override;
     bool createSurface(const PlatformData& platformData);
     bool pickPhysicalDevice(VkSurfaceKHR surface, const std::vector<const char*>& deviceExtensions);
     bool createLogicalDevice(const std::vector<const char*>& deviceExtensions);
@@ -20,7 +28,7 @@ namespace jgfx::vk {
     bool createImageViews();
     bool createGraphicsPipeline();
 
-    void newShader();
+    void newShader(ShaderHandle handle, const std::vector<char>& bytecode) override;
     void newProgram();
 
   private:
@@ -35,5 +43,7 @@ namespace jgfx::vk {
     VkFormat swapChainImageFormat;
     VkExtent2D swapChainExtent;
     std::vector<VkImageView> swapChainImageViews;
+
+    ShaderVK shaders[MAX_SHADERS];
   };
 }

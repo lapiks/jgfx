@@ -263,11 +263,26 @@ namespace jgfx::vk {
     return true;
   }
 
-  void RenderContextVK::newShader() {
-
+  void RenderContextVK::newShader(ShaderHandle handle, const std::vector<char>& bytecode) {
+    shaders[handle.id].create(bytecode, device);
   }
 
   void RenderContextVK::newProgram() {
 
   }
+
+  bool ShaderVK::create(const std::vector<char>& bytecode, VkDevice device) {
+    VkShaderModuleCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    createInfo.codeSize = bytecode.size();
+    createInfo.pCode = reinterpret_cast<const uint32_t*>(bytecode.data());
+
+    VkShaderModule shaderModule;
+    if (vkCreateShaderModule(device, &createInfo, nullptr, &_module) != VK_SUCCESS) {
+      return false;
+    }
+
+    return true;
+  }
+
 }

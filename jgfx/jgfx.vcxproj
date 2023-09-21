@@ -27,6 +27,7 @@
   <ItemGroup>
     <ClInclude Include="include\jgfx\jgfx.h" />
     <ClInclude Include="src\jgfx_impl.h" />
+    <ClInclude Include="src\renderer.h" />
     <ClInclude Include="src\renderer_vk.h" />
     <ClInclude Include="src\structs_vk.h" />
     <ClInclude Include="src\utils_vk.h" />
