@@ -81,8 +81,7 @@ namespace jgfx::vk {
     vkDestroyInstance(instance, nullptr);
   }
 
-  bool RenderContextVK::createSurface(const PlatformData& platformData)
-  {
+  bool RenderContextVK::createSurface(const PlatformData& platformData) {
     VkWin32SurfaceCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
     createInfo.hwnd = (HWND)platformData.nativeWindowHandle;
@@ -118,8 +117,7 @@ namespace jgfx::vk {
     return false;
   }
 
-  bool RenderContextVK::createLogicalDevice(const std::vector<const char*>& deviceExtensions)
-  {
+  bool RenderContextVK::createLogicalDevice(const std::vector<const char*>& deviceExtensions) {
     // Check for available queue families
     QueueFamilyIndices indices = utils::findQueueFamilies(physicalDevice, surface);
 
@@ -164,8 +162,7 @@ namespace jgfx::vk {
     return true;
   }
 
-  bool RenderContextVK::createSwapChain(const InitInfo& initInfo)
-  {
+  bool RenderContextVK::createSwapChain(const InitInfo& initInfo) {
     // Check what is supported for the swap chain
     SwapChainSupportDetails swapChainSupport = utils::querySwapChainSupport(physicalDevice, surface);
 
@@ -258,6 +255,19 @@ namespace jgfx::vk {
         return false;
       }
     }
+
+    return true;
   }
 
+  bool RenderContextVK::createGraphicsPipeline() {
+    return true;
+  }
+
+  void RenderContextVK::newShader() {
+
+  }
+
+  void RenderContextVK::newProgram() {
+
+  }
 }

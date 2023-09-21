@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <vector>
 
 namespace jgfx 
 {
@@ -19,8 +20,16 @@ namespace jgfx
     uint32_t resolutionHeight = 0;
   };
 
+  JGFX_HANDLE(ProgramHandle)
+  JGFX_HANDLE(ShaderHandle)
+
   struct Context {
+    // Initialization and shutdown
     bool init(const InitInfo& init);
     void shutdown();
+    // Object creation
+    ShaderHandle newShader(const std::vector<char>& binData);
+    ProgramHandle newProgram(const std::vector<char>& binData);
+    // 
   };
 }

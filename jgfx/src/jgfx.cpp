@@ -12,5 +12,13 @@ namespace jgfx
   void Context::shutdown() {
     ctx.shutdown();
   }
+
+  ShaderHandle Context::newShader(const std::vector<char>& binData) {
+    return ctx.newShader();
+  }
+
+  ProgramHandle Context::newProgram(const std::vector<char>& binData) {
+    return ctx.newProgram();
+  }
 }
 

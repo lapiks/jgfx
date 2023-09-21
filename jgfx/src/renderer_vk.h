@@ -18,6 +18,10 @@ namespace jgfx::vk {
     bool createLogicalDevice(const std::vector<const char*>& deviceExtensions);
     bool createSwapChain(const InitInfo& initInfo);
     bool createImageViews();
+    bool createGraphicsPipeline();
+
+    void newShader();
+    void newProgram();
 
   private:
     VkInstance instance;

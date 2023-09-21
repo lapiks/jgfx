@@ -13,6 +13,8 @@
 
 #include "jgfx/jgfx.h"
 
+#include "common.h"
+
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
@@ -45,6 +47,12 @@ public:
     initInfos.extensionNames = glfwExtensions;
 
     ctx.init(initInfos);
+
+    std::vector<char> vertBin = utils::readFile("C:/Users/dheni/source/repos/jgfx/jgfx/examples/shaders/shader.vert");
+    std::vector<char> fragBin = utils::readFile("C:/Users/dheni/source/repos/jgfx/jgfx/examples/shaders/shader.frag");
+
+    ctx.newShader(vertBin);
+    ctx.newShader(fragBin);
   }
 
   void draw() {
@@ -61,7 +69,7 @@ public:
     glfwDestroyWindow(window);
     glfwTerminate();
   }
-  
+
 private:
   GLFWwindow* window = nullptr;
   jgfx::Context ctx;
@@ -69,7 +77,7 @@ private:
 
 int main() {
   App app;
-  app.init(); 
+  app.init();
   app.draw();
   app.shutdown();
 

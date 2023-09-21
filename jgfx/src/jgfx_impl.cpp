@@ -11,4 +11,13 @@ namespace jgfx {
   void ContextImpl::shutdown() {
     vkCtx.shutdown();
   }
+
+  ShaderHandle ContextImpl::newShader() {
+    return ShaderHandle();
+  }
+
+  ProgramHandle ContextImpl::newProgram() {
+    return ProgramHandle();
+  }
+
 }
