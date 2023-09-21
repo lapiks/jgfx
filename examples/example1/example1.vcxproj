@@ -110,7 +110,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>jgfx.lib;example-common.lib;glfw3.lib;vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>../example-common/x64/Debug;../../../x64/Debug;../../3rdparty/glfw-3.3.8.bin.WIN64/lib-vc2022;C:/Program Files/VulkanSDK/1.3.261.1/Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>../example-common/x64/Debug;../../x64/Debug;../../3rdparty/glfw-3.3.8.bin.WIN64/lib-vc2022;C:/Program Files/VulkanSDK/1.3.261.1/Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -129,7 +129,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>jgfx.lib;example-common.lib;glfw3.lib;vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>../example-common/x64/Debug;../../../x64/Debug;../../3rdparty/glfw-3.3.8.bin.WIN64/lib-vc2022;C:/Program Files/VulkanSDK/1.3.261.1/Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>../example-common/x64/Debug;../../x64/Debug;../../3rdparty/glfw-3.3.8.bin.WIN64/lib-vc2022;C:/Program Files/VulkanSDK/1.3.261.1/Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
