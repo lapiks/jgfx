@@ -20,15 +20,17 @@ namespace jgfx::vk {
     VkShaderModule _module;
   };
 
-  struct PipelineVK {
-    bool create(VkDevice device, const ShaderVK& vertex, const ShaderVK& fragment);
-    VkPipeline _pipeline;
-  };
-
   struct PassVK {
     bool create(VkDevice device, VkFormat swapChainImageFormat);
     void destroy(VkDevice device);
     VkRenderPass _renderPass;
+  };
+
+  struct PipelineVK {
+    bool create(VkDevice device, const ShaderVK& vertex, const ShaderVK& fragment, const PassVK& pass);
+    void destroy(VkDevice device);
+    VkPipeline _graphicsPipeline;
+    VkPipelineLayout _pipelineLayout;
   };
 
   struct RenderContextVK : public RenderContext {
@@ -40,7 +42,7 @@ namespace jgfx::vk {
     bool createSwapChain(const InitInfo& initInfo);
     bool createImageViews();
 
-    void newPipeline(PipelineHandle handle, ShaderHandle vertex, ShaderHandle fragment);
+    void newPipeline(PipelineHandle handle, ShaderHandle vertex, ShaderHandle fragment, PassHandle pass);
     void newPass(PassHandle handle);
     void newShader(ShaderHandle handle, const std::vector<char>& bytecode) override;
     void newProgram();
@@ -57,7 +59,6 @@ namespace jgfx::vk {
     VkFormat swapChainImageFormat;
     VkExtent2D swapChainExtent;
     std::vector<VkImageView> swapChainImageViews;
-    VkPipelineLayout pipelineLayout;
 
     ShaderVK shaders[MAX_SHADERS];
     PipelineVK pipelines[MAX_PIPELINES];

@@ -17,11 +17,11 @@ namespace jgfx {
     vkCtx->shutdown();
   }
 
-  PipelineHandle ContextImpl::newPipeline(ShaderHandle vertex, ShaderHandle fragment) {
+  PipelineHandle ContextImpl::newPipeline(ShaderHandle vertex, ShaderHandle fragment, PassHandle pass) {
     PipelineHandle handle;
     pipelineHandleAlloc.allocate(handle);
 
-    vkCtx->newPipeline(handle, vertex, fragment);
+    vkCtx->newPipeline(handle, vertex, fragment, pass);
 
     return handle;
   }

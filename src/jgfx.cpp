@@ -13,8 +13,8 @@ namespace jgfx
     ctx.shutdown();
   }
 
-  PipelineHandle Context::newPipeline(ShaderHandle vertex, ShaderHandle fragment) {
-    return ctx.newPipeline(vertex, fragment);
+  PipelineHandle Context::newPipeline(ShaderHandle vertex, ShaderHandle fragment, PassHandle pass) {
+    return ctx.newPipeline(vertex, fragment, pass);
   }
 
   PassHandle Context::newPass() {

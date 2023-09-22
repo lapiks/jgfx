@@ -74,7 +74,9 @@ namespace jgfx::vk {
   }
 
   void RenderContextVK::shutdown() {
-    vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+    for (int i = 0; i < MAX_PIPELINES; i++) {
+      pipelines[i].destroy(device);
+    }
     for (int i = 0; i < MAX_PASSES; i++) {
       passes[i].destroy(device);
     }
@@ -284,11 +286,12 @@ namespace jgfx::vk {
 
   }
 
-  void RenderContextVK::newPipeline(PipelineHandle handle, ShaderHandle vertex, ShaderHandle fragment) {
+  void RenderContextVK::newPipeline(PipelineHandle handle, ShaderHandle vertex, ShaderHandle fragment, PassHandle pass) {
     pipelines[handle.id].create(
       device, 
       shaders[vertex.id], 
-      shaders[fragment.id]
+      shaders[fragment.id],
+      passes[pass.id]
     );
   }
 
@@ -319,7 +322,7 @@ namespace jgfx::vk {
     vkDestroyShaderModule(device, _module, nullptr);
   }
 
-  bool PipelineVK::create(VkDevice device, const ShaderVK& vertex, const ShaderVK& fragment) {
+  bool PipelineVK::create(VkDevice device, const ShaderVK& vertex, const ShaderVK& fragment, const PassVK& pass) {
     // Shader stages:
     // Vertex shader def
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
@@ -419,9 +422,9 @@ namespace jgfx::vk {
     pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
     pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
-    //if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
-    //  return false;
-    //}
+    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &_pipelineLayout) != VK_SUCCESS) {
+      return false;
+    }
 
     // Pipeline def
     VkGraphicsPipelineCreateInfo pipelineInfo{};
@@ -436,9 +439,23 @@ namespace jgfx::vk {
     pipelineInfo.pDepthStencilState = nullptr; // Optional
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.pDynamicState = &dynamicState;
-    pipelineInfo.layout = pipelineLayout;
+    pipelineInfo.layout = _pipelineLayout;
+    pipelineInfo.renderPass = pass._renderPass;
+    pipelineInfo.subpass = 0; // which subpass to use
+    pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional. To derive a pass from another.
+    pipelineInfo.basePipelineIndex = -1; // Optional. To derive a pass from another.
+
+    // Pipeline creation
+    if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_graphicsPipeline) != VK_SUCCESS) {
+      return false;
+    }
 
     return true;
+  }
+
+  void PipelineVK::destroy(VkDevice device) {
+    vkDestroyPipeline(device, _graphicsPipeline, nullptr);
+    vkDestroyPipelineLayout(device, _pipelineLayout, nullptr);
   }
 
   bool PassVK::create(VkDevice device, VkFormat swapChainImageFormat) {

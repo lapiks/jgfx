@@ -10,7 +10,7 @@ namespace jgfx {
     bool init(const InitInfo& initInfo);
     void shutdown();
 
-    PipelineHandle newPipeline(ShaderHandle vertex, ShaderHandle fragment);
+    PipelineHandle newPipeline(ShaderHandle vertex, ShaderHandle fragment, PassHandle pass);
     PassHandle newPass();
     ShaderHandle newShader(const std::vector<char>& bytecode);
     ProgramHandle newProgram();
