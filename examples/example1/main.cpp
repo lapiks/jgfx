@@ -54,6 +54,7 @@ public:
     jgfx::ShaderHandle vs = ctx.newShader(vertBin);
     jgfx::ShaderHandle fs = ctx.newShader(fragBin);
 
+    jgfx::PipelineHandle pipeline = ctx.newPipeline(vs, fs);
   }
 
   void draw() {

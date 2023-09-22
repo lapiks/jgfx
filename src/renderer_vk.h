@@ -5,6 +5,7 @@
 #include "renderer.h"
 
 constexpr int MAX_SHADERS = 512;
+constexpr int MAX_PIPELINES = 512;
 
 namespace jgfx {
   struct InitInfo;
@@ -13,9 +14,15 @@ namespace jgfx {
 
 namespace jgfx::vk { 
   struct ShaderVK {
-    bool create(const std::vector<char>& bytecode, VkDevice device);
+    bool create(VkDevice device, const std::vector<char>& bytecode);
 
     VkShaderModule _module;
+  };
+
+  struct PipelineVK {
+    bool create(VkDevice device, const ShaderVK& vertex, const ShaderVK& fragment);
+
+    VkPipeline _pipeline;
   };
 
   struct RenderContextVK : public RenderContext {
@@ -43,7 +50,9 @@ namespace jgfx::vk {
     VkFormat swapChainImageFormat;
     VkExtent2D swapChainExtent;
     std::vector<VkImageView> swapChainImageViews;
+    VkPipelineLayout pipelineLayout;
 
     ShaderVK shaders[MAX_SHADERS];
+    PipelineVK pipelines[MAX_PIPELINES];
   };
 }
