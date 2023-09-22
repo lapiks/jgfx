@@ -32,6 +32,7 @@ namespace jgfx {
   JGFX_HANDLE(ProgramHandle)
   JGFX_HANDLE(ShaderHandle)
   JGFX_HANDLE(PipelineHandle)
+  JGFX_HANDLE(PassHandle)
 
   struct Context {
     // Initialization and shutdown
@@ -39,6 +40,7 @@ namespace jgfx {
     void shutdown();
     // Object creation
     PipelineHandle newPipeline(ShaderHandle vertex, ShaderHandle fragment);
+    PassHandle newPass();
     ShaderHandle newShader(const std::vector<char>& binData);
     ProgramHandle newProgram(const std::vector<char>& binData);
     // 

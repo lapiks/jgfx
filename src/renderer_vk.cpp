@@ -73,6 +73,12 @@ namespace jgfx::vk {
 
   void RenderContextVK::shutdown() {
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+    for (int i = 0; i < MAX_PASSES; i++) {
+      passes[i].destroy(device);
+    }
+    for (int i = 0; i < MAX_SHADERS; i++) {
+      shaders[i].destroy(device);
+    }
     for (auto imageView : swapChainImageViews) {
       vkDestroyImageView(device, imageView, nullptr);
     }
@@ -279,6 +285,14 @@ namespace jgfx::vk {
     );
   }
 
+  void RenderContextVK::newPass(PassHandle handle)
+  {
+    passes[handle.id].create(
+      device,
+      swapChainImageFormat
+    );
+  }
+
   bool ShaderVK::create(VkDevice device, const std::vector<char>& bytecode) {
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -291,6 +305,10 @@ namespace jgfx::vk {
     }
 
     return true;
+  }
+
+  void ShaderVK::destroy(VkDevice device) {
+    vkDestroyShaderModule(device, _module, nullptr);
   }
 
   bool PipelineVK::create(VkDevice device, const ShaderVK& vertex, const ShaderVK& fragment) {
@@ -396,5 +414,47 @@ namespace jgfx::vk {
     //}
 
     return true;
+  }
+
+  bool PassVK::create(VkDevice device, VkFormat swapChainImageFormat) {
+    VkAttachmentDescription colorAttachment{};
+    colorAttachment.format = swapChainImageFormat;
+    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; // Image to be presented in the swap chain
+
+    // Reference to framebuffer attachment
+    VkAttachmentReference colorAttachmentRef{};
+    colorAttachmentRef.attachment = 0;
+    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    // Sub pass def
+    VkSubpassDescription subpass{};
+    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS; // graphics subpass
+    subpass.colorAttachmentCount = 1;
+    subpass.pColorAttachments = &colorAttachmentRef;
+
+    // Pass def
+    VkRenderPassCreateInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderPassInfo.attachmentCount = 1;
+    renderPassInfo.pAttachments = &colorAttachment;
+    renderPassInfo.subpassCount = 1;
+    renderPassInfo.pSubpasses = &subpass;
+
+    // Pass creation
+    if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &_renderPass) != VK_SUCCESS) {
+      return false;
+    }
+
+    return true;
+  }
+
+  void PassVK::destroy(VkDevice device) {
+    vkDestroyRenderPass(device, _renderPass, nullptr);
   }
 }

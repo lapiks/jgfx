@@ -17,6 +17,10 @@ namespace jgfx
     return ctx.newPipeline(vertex, fragment);
   }
 
+  jgfx::PassHandle Context::newPass() {
+    return ctx.newPass();
+  }
+
   ShaderHandle Context::newShader(const std::vector<char>& binData) {
     return ctx.newShader(binData);
   }

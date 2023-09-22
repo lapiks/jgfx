@@ -6,6 +6,7 @@
 
 constexpr int MAX_SHADERS = 512;
 constexpr int MAX_PIPELINES = 512;
+constexpr int MAX_PASSES = 512;
 
 namespace jgfx {
   struct InitInfo;
@@ -15,14 +16,19 @@ namespace jgfx {
 namespace jgfx::vk { 
   struct ShaderVK {
     bool create(VkDevice device, const std::vector<char>& bytecode);
-
+    void destroy(VkDevice device);
     VkShaderModule _module;
   };
 
   struct PipelineVK {
     bool create(VkDevice device, const ShaderVK& vertex, const ShaderVK& fragment);
-
     VkPipeline _pipeline;
+  };
+
+  struct PassVK {
+    bool create(VkDevice device, VkFormat swapChainImageFormat);
+    void destroy(VkDevice device);
+    VkRenderPass _renderPass;
   };
 
   struct RenderContextVK : public RenderContext {
@@ -35,6 +41,7 @@ namespace jgfx::vk {
     bool createImageViews();
 
     void newPipeline(PipelineHandle handle, ShaderHandle vertex, ShaderHandle fragment);
+    void newPass(PassHandle handle);
     void newShader(ShaderHandle handle, const std::vector<char>& bytecode) override;
     void newProgram();
 
@@ -54,5 +61,6 @@ namespace jgfx::vk {
 
     ShaderVK shaders[MAX_SHADERS];
     PipelineVK pipelines[MAX_PIPELINES];
+    PassVK passes[MAX_PASSES];  
   };
 }

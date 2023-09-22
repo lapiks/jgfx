@@ -11,6 +11,7 @@ namespace jgfx {
     void shutdown();
 
     PipelineHandle newPipeline(ShaderHandle vertex, ShaderHandle fragment);
+    PassHandle newPass();
     ShaderHandle newShader(const std::vector<char>& bytecode);
     ProgramHandle newProgram();
 
@@ -18,6 +19,7 @@ namespace jgfx {
     std::unique_ptr<vk::RenderContextVK> vkCtx;
 
     HandleAllocator<PipelineHandle> pipelineHandleAlloc;
+    HandleAllocator<PassHandle> passHandleAlloc;
     HandleAllocator<ShaderHandle> shaderHandleAlloc;
   };
 }

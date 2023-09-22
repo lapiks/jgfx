@@ -26,6 +26,15 @@ namespace jgfx {
     return handle;
   }
 
+  PassHandle ContextImpl::newPass() {
+    PassHandle handle;
+    passHandleAlloc.allocate(handle);
+
+    vkCtx->newPass(handle);
+
+    return handle;
+  }
+
   ShaderHandle ContextImpl::newShader(const std::vector<char>& bytecode) {
     ShaderHandle handle;
     shaderHandleAlloc.allocate(handle);
