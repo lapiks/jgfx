@@ -17,9 +17,18 @@ namespace jgfx {
     vkCtx->shutdown();
   }
 
+  PipelineHandle ContextImpl::newPipeline(ShaderHandle vertex, ShaderHandle fragment) {
+    PipelineHandle handle;
+    pipelineHandleAlloc.allocate(handle);
+
+    vkCtx->newPipeline(handle, vertex, fragment);
+
+    return handle;
+  }
+
   ShaderHandle ContextImpl::newShader(const std::vector<char>& bytecode) {
     ShaderHandle handle;
-    shaderHandleAllocator.allocate(handle);
+    shaderHandleAlloc.allocate(handle);
 
     vkCtx->newShader(handle, bytecode);
 

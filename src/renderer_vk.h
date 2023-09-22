@@ -26,8 +26,8 @@ namespace jgfx::vk {
     bool createLogicalDevice(const std::vector<const char*>& deviceExtensions);
     bool createSwapChain(const InitInfo& initInfo);
     bool createImageViews();
-    bool createGraphicsPipeline();
 
+    void newPipeline(PipelineHandle handle, ShaderHandle vertex, ShaderHandle fragment);
     void newShader(ShaderHandle handle, const std::vector<char>& bytecode) override;
     void newProgram();
 

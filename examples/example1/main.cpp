@@ -48,8 +48,8 @@ public:
 
     ctx.init(initInfos);
 
-    std::vector<char> vertBin = utils::readFile("C:/Users/dheni/source/repos/jgfx/jgfx/examples/shaders/shader.vert");
-    std::vector<char> fragBin = utils::readFile("C:/Users/dheni/source/repos/jgfx/jgfx/examples/shaders/shader.frag");
+    std::vector<char> vertBin = utils::readFile("../shaders/vert.spv");
+    std::vector<char> fragBin = utils::readFile("../shaders/frag.spv");
 
     jgfx::ShaderHandle vs = ctx.newShader(vertBin);
     jgfx::ShaderHandle fs = ctx.newShader(fragBin);

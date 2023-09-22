@@ -10,12 +10,14 @@ namespace jgfx {
     bool init(const InitInfo& initInfo);
     void shutdown();
 
+    PipelineHandle newPipeline(ShaderHandle vertex, ShaderHandle fragment);
     ShaderHandle newShader(const std::vector<char>& bytecode);
     ProgramHandle newProgram();
 
   private:
     std::unique_ptr<vk::RenderContextVK> vkCtx;
 
-    HandleAllocator<ShaderHandle> shaderHandleAllocator;
+    HandleAllocator<PipelineHandle> pipelineHandleAlloc;
+    HandleAllocator<ShaderHandle> shaderHandleAlloc;
   };
 }
