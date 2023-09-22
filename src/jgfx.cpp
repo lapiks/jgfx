@@ -17,7 +17,7 @@ namespace jgfx
     return ctx.newPipeline(vertex, fragment);
   }
 
-  jgfx::PassHandle Context::newPass() {
+  PassHandle Context::newPass() {
     return ctx.newPass();
   }
 

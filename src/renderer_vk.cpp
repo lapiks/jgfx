@@ -23,7 +23,7 @@ namespace jgfx::vk {
       return false;
     }
 
-    // Instance creation
+    // Application def
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = "Hello Triangle";
@@ -32,6 +32,7 @@ namespace jgfx::vk {
     appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
     appInfo.apiVersion = VK_API_VERSION_1_0;
 
+    // Instance def
     VkInstanceCreateInfo vkCreateInfo{};
     vkCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     vkCreateInfo.pApplicationInfo = &appInfo;
@@ -46,6 +47,7 @@ namespace jgfx::vk {
       vkCreateInfo.enabledLayerCount = 0;
     }
 
+    // Instance creation
     VkResult result = vkCreateInstance(&vkCreateInfo, nullptr, &instance);
 
     if (!createSurface(initInfo.platformData))
@@ -89,11 +91,13 @@ namespace jgfx::vk {
   }
 
   bool RenderContextVK::createSurface(const PlatformData& platformData) {
+    // Surface def
     VkWin32SurfaceCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
     createInfo.hwnd = (HWND)platformData.nativeWindowHandle;
     createInfo.hinstance = GetModuleHandle(nullptr);
 
+    // Surface creation
     if (vkCreateWin32SurfaceKHR(instance, &createInfo, nullptr, &surface) != VK_SUCCESS) {
       return false;
     }
@@ -147,7 +151,7 @@ namespace jgfx::vk {
     // define needed features
     VkPhysicalDeviceFeatures deviceFeatures{};
 
-    // Logical device creation
+    // Logical device def
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
@@ -158,6 +162,7 @@ namespace jgfx::vk {
     // Device level's validation layers are deprecated
     createInfo.enabledLayerCount = 0;
 
+    // Logical device creation
     if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
       return false;
     }
@@ -189,7 +194,7 @@ namespace jgfx::vk {
       imageCount = swapChainSupport.capabilities.maxImageCount;
     }
 
-    // Swap chain construction
+    // Swap chain def
     VkSwapchainCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     createInfo.surface = surface;
@@ -199,6 +204,11 @@ namespace jgfx::vk {
     createInfo.imageExtent = extent;
     createInfo.imageArrayLayers = 1;
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // todo: VK_IMAGE_USAGE_TRANSFER_DST_BIT to enable post processing
+    createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
+    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    createInfo.presentMode = presentMode;
+    createInfo.clipped = VK_TRUE;
+    createInfo.oldSwapchain = VK_NULL_HANDLE;
 
     QueueFamilyIndices indices = utils::findQueueFamilies(physicalDevice, surface);
     uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
@@ -214,12 +224,7 @@ namespace jgfx::vk {
       createInfo.pQueueFamilyIndices = nullptr; // Optional
     }
 
-    createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
-    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    createInfo.presentMode = presentMode;
-    createInfo.clipped = VK_TRUE;
-    createInfo.oldSwapchain = VK_NULL_HANDLE;
-
+    // Swap chain creation
     if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain) != VK_SUCCESS) {
       return false;
     }
@@ -243,6 +248,7 @@ namespace jgfx::vk {
     // create image views for each image
     swapChainImageViews.resize(swapChainImages.size());
     for (size_t i = 0; i < swapChainImages.size(); i++) {
+      // Image view def
       VkImageViewCreateInfo createInfo{};
       createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
       createInfo.image = swapChainImages[i];
@@ -258,6 +264,7 @@ namespace jgfx::vk {
       createInfo.subresourceRange.baseArrayLayer = 0;
       createInfo.subresourceRange.layerCount = 1;
 
+      // Image view creation
       if (vkCreateImageView(device, &createInfo, nullptr, &swapChainImageViews[i]) != VK_SUCCESS) {
         return false;
       }
@@ -294,12 +301,13 @@ namespace jgfx::vk {
   }
 
   bool ShaderVK::create(VkDevice device, const std::vector<char>& bytecode) {
+    // Shader module def
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     createInfo.codeSize = bytecode.size();
     createInfo.pCode = reinterpret_cast<const uint32_t*>(bytecode.data());
 
-    VkShaderModule shaderModule;
+    // Shader module creation
     if (vkCreateShaderModule(device, &createInfo, nullptr, &_module) != VK_SUCCESS) {
       return false;
     }
@@ -312,14 +320,15 @@ namespace jgfx::vk {
   }
 
   bool PipelineVK::create(VkDevice device, const ShaderVK& vertex, const ShaderVK& fragment) {
-    // Vertex shader
+    // Shader stages:
+    // Vertex shader def
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
     vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
     vertShaderStageInfo.module = vertex._module;
     vertShaderStageInfo.pName = "main";
 
-    // Fragment shader
+    // Fragment shader def
     VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
     fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -328,7 +337,7 @@ namespace jgfx::vk {
 
     VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
-    // Vertex input info
+    // Vertex input def
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputInfo.vertexBindingDescriptionCount = 0;
@@ -336,7 +345,7 @@ namespace jgfx::vk {
     vertexInputInfo.vertexAttributeDescriptionCount = 0;
     vertexInputInfo.pVertexAttributeDescriptions = nullptr;
 
-    // Primitive
+    // Primitive def
     VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
     inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -348,6 +357,7 @@ namespace jgfx::vk {
       VK_DYNAMIC_STATE_SCISSOR
     };
 
+    // Dynamic state def
     VkPipelineDynamicStateCreateInfo dynamicState{};
     dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
     dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
@@ -358,7 +368,7 @@ namespace jgfx::vk {
     viewportState.viewportCount = 1;
     viewportState.scissorCount = 1;
 
-    // Rasterizer
+    // Rasterizer def
     VkPipelineRasterizationStateCreateInfo rasterizer{};
     rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     rasterizer.depthClampEnable = VK_FALSE;
@@ -369,7 +379,7 @@ namespace jgfx::vk {
     rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
     rasterizer.depthBiasEnable = VK_FALSE;
 
-    // Multisampling
+    // Multisampling def
     VkPipelineMultisampleStateCreateInfo multisampling{};
     multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisampling.sampleShadingEnable = VK_FALSE;
@@ -379,7 +389,7 @@ namespace jgfx::vk {
     multisampling.alphaToCoverageEnable = VK_FALSE; // Optional
     multisampling.alphaToOneEnable = VK_FALSE; // Optional
 
-    // Color blending
+    // Color blending def
     VkPipelineColorBlendAttachmentState colorBlendAttachment{};
     colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
     colorBlendAttachment.blendEnable = VK_TRUE;
@@ -413,10 +423,26 @@ namespace jgfx::vk {
     //  return false;
     //}
 
+    // Pipeline def
+    VkGraphicsPipelineCreateInfo pipelineInfo{};
+    pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    pipelineInfo.stageCount = 2;
+    pipelineInfo.pStages = shaderStages;
+    pipelineInfo.pVertexInputState = &vertexInputInfo;
+    pipelineInfo.pInputAssemblyState = &inputAssembly;
+    pipelineInfo.pViewportState = &viewportState;
+    pipelineInfo.pRasterizationState = &rasterizer;
+    pipelineInfo.pMultisampleState = &multisampling;
+    pipelineInfo.pDepthStencilState = nullptr; // Optional
+    pipelineInfo.pColorBlendState = &colorBlending;
+    pipelineInfo.pDynamicState = &dynamicState;
+    pipelineInfo.layout = pipelineLayout;
+
     return true;
   }
 
   bool PassVK::create(VkDevice device, VkFormat swapChainImageFormat) {
+    // Attachment def
     VkAttachmentDescription colorAttachment{};
     colorAttachment.format = swapChainImageFormat;
     colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
