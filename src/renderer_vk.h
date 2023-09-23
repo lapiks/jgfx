@@ -27,10 +27,13 @@ namespace jgfx::vk {
     bool createImageViews(VkDevice device);
     bool createFramebuffers(VkDevice device);
     void destroy(VkDevice device, VkInstance instance);
+    void acquire(VkDevice device);
     VkSurfaceKHR _surface;
     VkSwapchainKHR _swapChain;
     VkFormat _imageFormat;
     VkExtent2D _extent;
+    VkSemaphore _imageAvailableSemaphore; // signal that an image has been acquired from swap chain and is ready for rendering
+    VkFence _inFlightFence; // wait for frame ending to start a new one
     std::vector<VkImage> _images;
     std::vector<VkImageView> _imageViews;
     std::vector<FramebufferVK> _framebuffers;
@@ -57,6 +60,7 @@ namespace jgfx::vk {
 
   struct CommandQueueVK {
     void begin();
+    void end();
     bool createCommandPool(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
     bool createCommandBuffer(VkDevice device);
     bool createSyncObjects(VkDevice device);

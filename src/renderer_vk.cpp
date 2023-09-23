@@ -223,22 +223,17 @@ namespace jgfx::vk {
   }
 
   void RenderContextVK::commitFrame() {
-    // wait for previous frame to finish
-    vkWaitForFences(_device, 1, &_inFlightFence, VK_TRUE, UINT64_MAX);
-
-    // reset fence
-    vkResetFences(_device, 1, &_inFlightFence);
-
-    uint32_t imageIndex;
-    // acquire image from swap chain when the semaphore is signaled
-    vkAcquireNextImageKHR(_device, _swapChain._swapChain, UINT64_MAX, _imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+    _swapChain.acquire(_device);
+    _cmdQueue.end();
+    _cmdQueue.begin();
+    
   }
 
   bool SwapChainVK::createSwapChain(VkDevice device, VkPhysicalDevice physicalDevice, const Resolution& resolution) {
     // Check what is supported for the swap chain
     SwapChainSupportDetails swapChainSupport = utils::querySwapChainSupport(physicalDevice, _surface);
 
-    // choose format
+    // choose form
     VkSurfaceFormatKHR surfaceFormat = utils::chooseSwapSurfaceFormat(swapChainSupport.formats);
     // choose present mode
     VkPresentModeKHR presentMode = utils::chooseSwapPresentMode(swapChainSupport.presentModes);
@@ -299,6 +294,21 @@ namespace jgfx::vk {
     // save image format and extent
     _imageFormat = surfaceFormat.format;
     _extent = extent;
+
+    VkSemaphoreCreateInfo semaphoreInfo{};
+    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &_imageAvailableSemaphore)) {
+      return false;
+    }
+
+    VkFenceCreateInfo fenceInfo{};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+    if (vkCreateFence(device, &fenceInfo, nullptr, &_inFlightFence) != VK_SUCCESS) {
+      return false;
+    }
 
     return true;
   }
@@ -367,6 +377,15 @@ namespace jgfx::vk {
     }
     vkDestroySwapchainKHR(device, _swapChain, nullptr);
     vkDestroySurfaceKHR(instance, _surface, nullptr);
+  }
+
+  void SwapChainVK::acquire(VkDevice device) {
+    // wait for previous frame to finish
+    vkWaitForFences(device, 1, &_inFlightFence, VK_TRUE, UINT64_MAX);
+    vkResetFences(device, 1, &_inFlightFence);
+
+    uint32_t imageIndex;
+    vkAcquireNextImageKHR(device, _swapChain, UINT64_MAX, _imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
   }
 
   bool ShaderVK::create(VkDevice device, const std::vector<char>& bytecode) {
@@ -651,6 +670,10 @@ namespace jgfx::vk {
     }
   }
 
+  void CommandQueueVK::end() {
+    vkResetCommandBuffer(_commandBuffer, 0);
+  }
+
   void CommandQueueVK::beginPass(VkRenderPass pass, VkFramebuffer framebuffer, const VkExtent2D& extent) {
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -694,5 +717,4 @@ namespace jgfx::vk {
   void CommandQueueVK::draw(uint32_t firstVertex, uint32_t vertexCount) {
     vkCmdDraw(_commandBuffer, vertexCount, 1, firstVertex, 0);
   }
-
 }
