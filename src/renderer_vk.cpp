@@ -80,6 +80,9 @@ namespace jgfx::vk {
   }
 
   void RenderContextVK::shutdown() {
+    vkDestroySemaphore(_device, _imageAvailableSemaphore, nullptr);
+    vkDestroySemaphore(_device, _renderFinishedSemaphore, nullptr);
+    vkDestroyFence(_device, _inFlightFence, nullptr);
     vkDestroyCommandPool(_device, _commandPool, nullptr);
     //for (int i = 0; i < MAX_FRAMEBUFFERS; i++) {
     //  _framebuffers[i].destroy(_device);
