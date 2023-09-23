@@ -45,6 +45,7 @@ public:
     initInfos.platformData = pd;
     initInfos.extensionCount = extensionCount;
     initInfos.extensionNames = glfwExtensions;
+    initInfos.resolution = { WIDTH, HEIGHT };
 
     ctx.init(initInfos);
 

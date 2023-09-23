@@ -21,5 +21,6 @@ namespace jgfx {
     HandleAllocator<PipelineHandle> pipelineHandleAlloc;
     HandleAllocator<PassHandle> passHandleAlloc;
     HandleAllocator<ShaderHandle> shaderHandleAlloc;
+    HandleAllocator<FramebufferHandle> framebufferHandleAlloc;
   };
 }

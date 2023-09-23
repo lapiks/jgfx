@@ -48,9 +48,9 @@ namespace jgfx::vk {
     }
 
     // Instance creation
-    VkResult result = vkCreateInstance(&vkCreateInfo, nullptr, &instance);
+    VkResult result = vkCreateInstance(&vkCreateInfo, nullptr, &_instance);
 
-    if (!createSurface(initInfo.platformData))
+    if (!_swapChain.createSurface(_instance, initInfo.platformData))
       return false;
 
     // We need the swap chain extension for drawing to screen
@@ -58,58 +58,46 @@ namespace jgfx::vk {
       VK_KHR_SWAPCHAIN_EXTENSION_NAME
     };
 
-    if (!pickPhysicalDevice(surface, deviceExtensions))
+    if (!pickPhysicalDevice(_swapChain._surface, deviceExtensions))
       return false;
 
-    if (!createLogicalDevice(deviceExtensions))
+    if (!createLogicalDevice(_swapChain._surface, deviceExtensions))
       return false;
 
-    if (!createSwapChain(initInfo))
+    if (!_swapChain.createSwapChain(_device, _physicalDevice, initInfo.resolution))
       return false;
 
-    if (!createImageViews())
+    if (!_swapChain.createImageViews(_device))
+      return false;
+
+    if (!_swapChain.createFramebuffers(_device))
       return false;
 
     return true;
   }
 
   void RenderContextVK::shutdown() {
+    vkDestroyCommandPool(_device, _commandPool, nullptr);
+    //for (int i = 0; i < MAX_FRAMEBUFFERS; i++) {
+    //  _framebuffers[i].destroy(_device);
+    //}
     for (int i = 0; i < MAX_PIPELINES; i++) {
-      pipelines[i].destroy(device);
+      _pipelines[i].destroy(_device);
     }
     for (int i = 0; i < MAX_PASSES; i++) {
-      passes[i].destroy(device);
+      _passes[i].destroy(_device);
     }
     for (int i = 0; i < MAX_SHADERS; i++) {
-      shaders[i].destroy(device);
+      _shaders[i].destroy(_device);
     }
-    for (auto imageView : swapChainImageViews) {
-      vkDestroyImageView(device, imageView, nullptr);
-    }
-    vkDestroySwapchainKHR(device, swapChain, nullptr);
-    vkDestroyDevice(device, nullptr);
-    vkDestroySurfaceKHR(instance, surface, nullptr);
-    vkDestroyInstance(instance, nullptr);
-  }
-
-  bool RenderContextVK::createSurface(const PlatformData& platformData) {
-    // Surface def
-    VkWin32SurfaceCreateInfoKHR createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-    createInfo.hwnd = (HWND)platformData.nativeWindowHandle;
-    createInfo.hinstance = GetModuleHandle(nullptr);
-
-    // Surface creation
-    if (vkCreateWin32SurfaceKHR(instance, &createInfo, nullptr, &surface) != VK_SUCCESS) {
-      return false;
-    }
-
-    return true;
+    vkDestroyDevice(_device, nullptr);
+    _swapChain.destroy(_device, _instance);
+    vkDestroyInstance(_instance, nullptr);
   }
 
   bool RenderContextVK::pickPhysicalDevice(VkSurfaceKHR surface, const std::vector<const char*>& deviceExtensions) {
     uint32_t deviceCount = 0;
-    vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+    vkEnumeratePhysicalDevices(_instance, &deviceCount, nullptr);
 
     if (deviceCount == 0) {
       return false;
@@ -117,12 +105,12 @@ namespace jgfx::vk {
 
     // enumarate available physical devices
     std::vector<VkPhysicalDevice> devices(deviceCount);
-    vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+    vkEnumeratePhysicalDevices(_instance, &deviceCount, devices.data());
 
     // check for the first suitable device
     for (const auto& device : devices) {
       if (utils::isDeviceSuitable(device, surface, deviceExtensions)) {
-        physicalDevice = device;
+        _physicalDevice = device;
         return true;
       }
     }
@@ -130,9 +118,9 @@ namespace jgfx::vk {
     return false;
   }
 
-  bool RenderContextVK::createLogicalDevice(const std::vector<const char*>& deviceExtensions) {
+  bool RenderContextVK::createLogicalDevice(VkSurfaceKHR surface, const std::vector<const char*>& deviceExtensions) {
     // Check for available queue families
-    QueueFamilyIndices indices = utils::findQueueFamilies(physicalDevice, surface);
+    QueueFamilyIndices indices = utils::findQueueFamilies(_physicalDevice, surface);
 
     // Queues creation
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -165,27 +153,90 @@ namespace jgfx::vk {
     createInfo.enabledLayerCount = 0;
 
     // Logical device creation
-    if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
+    if (vkCreateDevice(_physicalDevice, &createInfo, nullptr, &_device) != VK_SUCCESS) {
       return false;
     }
 
     // Get queues created alongside logical device
-    vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
-    vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
+    vkGetDeviceQueue(_device, indices.graphicsFamily.value(), 0, &_graphicsQueue);
+    vkGetDeviceQueue(_device, indices.presentFamily.value(), 0, &_presentQueue);
 
     return true;
   }
 
-  bool RenderContextVK::createSwapChain(const InitInfo& initInfo) {
+  bool RenderContextVK::createCommandPool() {
+    QueueFamilyIndices queueFamilyIndices = utils::findQueueFamilies(_physicalDevice, _swapChain._surface);
+
+    VkCommandPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+
+    if (vkCreateCommandPool(_device, &poolInfo, nullptr, &_commandPool) != VK_SUCCESS) {
+      return false;
+    }
+
+    return true;
+  }
+
+  bool RenderContextVK::createCommandBuffer() {
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.commandPool = _commandPool;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandBufferCount = 1;
+
+    if (vkAllocateCommandBuffers(_device, &allocInfo, &_commandBuffer) != VK_SUCCESS) {
+      return false;
+    }
+
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = 0; // Optional
+    beginInfo.pInheritanceInfo = nullptr; // Optional
+
+    if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
+      return false;
+    }
+
+    return true;
+  }
+
+
+  void RenderContextVK::newShader(ShaderHandle handle, const std::vector<char>& bytecode) {
+    _shaders[handle.id].create(
+      _device, 
+      bytecode
+    );
+  }
+
+  void RenderContextVK::newPipeline(PipelineHandle handle, ShaderHandle vertex, ShaderHandle fragment, PassHandle pass) {
+    _pipelines[handle.id].create(
+      _device, 
+      _shaders[vertex.id], 
+      _shaders[fragment.id],
+      _passes[pass.id]
+    );
+  }
+
+  void RenderContextVK::newPass(PassHandle handle)
+  {
+    _passes[handle.id].create(
+      _device,
+      _swapChain._imageFormat
+    );
+  }
+
+  bool SwapChainVK::createSwapChain(VkDevice device, VkPhysicalDevice physicalDevice, const Resolution& resolution) {
     // Check what is supported for the swap chain
-    SwapChainSupportDetails swapChainSupport = utils::querySwapChainSupport(physicalDevice, surface);
+    SwapChainSupportDetails swapChainSupport = utils::querySwapChainSupport(physicalDevice, _surface);
 
     // choose format
     VkSurfaceFormatKHR surfaceFormat = utils::chooseSwapSurfaceFormat(swapChainSupport.formats);
     // choose present mode
     VkPresentModeKHR presentMode = utils::chooseSwapPresentMode(swapChainSupport.presentModes);
     // choose extent
-    VkExtent2D extent = utils::chooseSwapExtent(swapChainSupport.capabilities, initInfo);
+    VkExtent2D extent = utils::chooseSwapExtent(swapChainSupport.capabilities, resolution);
 
     // Recommended image count is at least the min capability + 1
     uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
@@ -199,7 +250,7 @@ namespace jgfx::vk {
     // Swap chain def
     VkSwapchainCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    createInfo.surface = surface;
+    createInfo.surface = _surface;
     createInfo.minImageCount = imageCount;
     createInfo.imageFormat = surfaceFormat.format;
     createInfo.imageColorSpace = surfaceFormat.colorSpace;
@@ -212,7 +263,7 @@ namespace jgfx::vk {
     createInfo.clipped = VK_TRUE;
     createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-    QueueFamilyIndices indices = utils::findQueueFamilies(physicalDevice, surface);
+    QueueFamilyIndices indices = utils::findQueueFamilies(physicalDevice, _surface);
     uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 
     if (indices.graphicsFamily != indices.presentFamily) {
@@ -227,35 +278,50 @@ namespace jgfx::vk {
     }
 
     // Swap chain creation
-    if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain) != VK_SUCCESS) {
+    if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &_swapChain) != VK_SUCCESS) {
       return false;
     }
 
     // retrieve swapchain's images
     // get image count
-    vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
-    swapChainImages.resize(imageCount);
+    vkGetSwapchainImagesKHR(device, _swapChain, &imageCount, nullptr);
+    _images.resize(imageCount);
     // get actual images
-    vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data());
+    vkGetSwapchainImagesKHR(device, _swapChain, &imageCount, _images.data());
 
     // save image format and extent
-    swapChainImageFormat = surfaceFormat.format;
-    swapChainExtent = extent;
+    _imageFormat = surfaceFormat.format;
+    _extent = extent;
 
     return true;
   }
 
-  bool RenderContextVK::createImageViews()
-  {
+  bool SwapChainVK::createSurface(VkInstance instance, const PlatformData& platformData) {
+    // Surface def
+    // TODO: handling of other platforms than windows
+    VkWin32SurfaceCreateInfoKHR createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+    createInfo.hwnd = (HWND)platformData.nativeWindowHandle;
+    createInfo.hinstance = GetModuleHandle(nullptr);
+
+    // Surface creation
+    if (vkCreateWin32SurfaceKHR(instance, &createInfo, nullptr, &_surface) != VK_SUCCESS) {
+      return false;
+    }
+
+    return true;
+  }
+
+  bool SwapChainVK::createImageViews(VkDevice device) {
     // create image views for each image
-    swapChainImageViews.resize(swapChainImages.size());
-    for (size_t i = 0; i < swapChainImages.size(); i++) {
+    _imageViews.resize(_images.size());
+    for (size_t i = 0; i < _images.size(); i++) {
       // Image view def
       VkImageViewCreateInfo createInfo{};
       createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-      createInfo.image = swapChainImages[i];
+      createInfo.image = _images[i];
       createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-      createInfo.format = swapChainImageFormat;
+      createInfo.format = _imageFormat;
       createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
       createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
       createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -267,7 +333,7 @@ namespace jgfx::vk {
       createInfo.subresourceRange.layerCount = 1;
 
       // Image view creation
-      if (vkCreateImageView(device, &createInfo, nullptr, &swapChainImageViews[i]) != VK_SUCCESS) {
+      if (vkCreateImageView(device, &createInfo, nullptr, &_imageViews[i]) != VK_SUCCESS) {
         return false;
       }
     }
@@ -275,32 +341,25 @@ namespace jgfx::vk {
     return true;
   }
 
-  void RenderContextVK::newShader(ShaderHandle handle, const std::vector<char>& bytecode) {
-    shaders[handle.id].create(
-      device, 
-      bytecode
-    );
+  bool SwapChainVK::createFramebuffers(VkDevice device) {
+    // Create framebuffer for each image
+    _framebuffers.resize(_images.size());
+    for (size_t i = 0; i < _images.size(); i++) {
+      _framebuffers[i].create(device, _imageViews, _extent);
+    }
+
+    return true;
   }
 
-  void RenderContextVK::newProgram() {
-
-  }
-
-  void RenderContextVK::newPipeline(PipelineHandle handle, ShaderHandle vertex, ShaderHandle fragment, PassHandle pass) {
-    pipelines[handle.id].create(
-      device, 
-      shaders[vertex.id], 
-      shaders[fragment.id],
-      passes[pass.id]
-    );
-  }
-
-  void RenderContextVK::newPass(PassHandle handle)
-  {
-    passes[handle.id].create(
-      device,
-      swapChainImageFormat
-    );
+  void SwapChainVK::destroy(VkDevice device, VkInstance instance) {
+    for (auto framebuffer : _framebuffers) {
+      framebuffer.destroy(device);
+    }
+    for (auto imageView : _imageViews) {
+      vkDestroyImageView(device, imageView, nullptr);
+    }
+    vkDestroySwapchainKHR(device, _swapChain, nullptr);
+    vkDestroySurfaceKHR(instance, _surface, nullptr);
   }
 
   bool ShaderVK::create(VkDevice device, const std::vector<char>& bytecode) {
@@ -460,6 +519,7 @@ namespace jgfx::vk {
 
   bool PassVK::create(VkDevice device, VkFormat swapChainImageFormat) {
     // Attachment def
+    // Define the attachment format to use but it do not actualy reference an actual image view
     VkAttachmentDescription colorAttachment{};
     colorAttachment.format = swapChainImageFormat;
     colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -499,5 +559,26 @@ namespace jgfx::vk {
 
   void PassVK::destroy(VkDevice device) {
     vkDestroyRenderPass(device, _renderPass, nullptr);
+  }
+
+  bool FramebufferVK::create(VkDevice device, const std::vector<VkImageView>& attachments, VkExtent2D swapChainExtent, VkRenderPass renderPass) {
+    // Framebuffer def
+    VkFramebufferCreateInfo framebufferInfo{};
+    framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+    framebufferInfo.renderPass = renderPass; // which compatible (same attachments) render pass to use with 
+    framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+    framebufferInfo.pAttachments = attachments.data(); // which attachments (aka image views) to use
+    framebufferInfo.width = swapChainExtent.width;
+    framebufferInfo.height = swapChainExtent.height;
+    framebufferInfo.layers = 1;
+
+    //Framebuffer creation
+    if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &_framebuffer) != VK_SUCCESS) {
+      return false;
+    }
+  }
+
+  void FramebufferVK::destroy(VkDevice device) {
+    vkDestroyFramebuffer(device, _framebuffer, nullptr);
   }
 }

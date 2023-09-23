@@ -86,15 +86,15 @@ namespace jgfx::vk::utils {
     return VK_PRESENT_MODE_FIFO_KHR;
   }
 
-  VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, const InitInfo& initInfo) {
+  VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, const Resolution& resolution) {
     // Compile error here :/
     /*if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
       return capabilities.currentExtent;
     }
     else */ {
       VkExtent2D actualExtent = {
-          static_cast<uint32_t>(initInfo.resolutionWidth),
-          static_cast<uint32_t>(initInfo.resolutionHeight)
+          static_cast<uint32_t>(resolution.width),
+          static_cast<uint32_t>(resolution.height)
       };
 
       actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);

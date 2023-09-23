@@ -21,18 +21,23 @@ namespace jgfx {
     void* nativeWindowHandle = nullptr;
   };
 
+  struct Resolution {
+    uint32_t width = 0;
+    uint32_t height = 0;
+  };
+
   struct InitInfo {
     PlatformData platformData;
     uint32_t extensionCount = 0;
     const char** extensionNames = nullptr;
-    uint32_t resolutionWidth = 0;
-    uint32_t resolutionHeight = 0;
+    Resolution resolution;
   };
 
   JGFX_HANDLE(ProgramHandle)
   JGFX_HANDLE(ShaderHandle)
   JGFX_HANDLE(PipelineHandle)
   JGFX_HANDLE(PassHandle)
+  JGFX_HANDLE(FramebufferHandle)
 
   struct Context {
     // Initialization and shutdown
