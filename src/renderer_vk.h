@@ -55,14 +55,28 @@ namespace jgfx::vk {
     VkPipelineLayout _pipelineLayout;
   };
 
+  struct CommandQueueVK {
+    void begin();
+    bool createCommandPool(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
+    bool createCommandBuffer(VkDevice device);
+    bool createSyncObjects(VkDevice device);
+    void destroy(VkDevice device);
+    void beginPass(VkRenderPass pass, VkFramebuffer framebuffer, const VkExtent2D& extent);
+    void endPass();
+    void applyPipeline(VkPipeline pipeline, const VkExtent2D& extent);
+    void draw(uint32_t firstVertex, uint32_t vertexCount);
+    VkCommandPool _commandPool;
+    VkCommandBuffer _commandBuffer;
+    VkSemaphore _imageAvailableSemaphore; // signal that an image has been acquired from swap chain and is ready for rendering
+    VkSemaphore _renderFinishedSemaphore; // signal that rendering has finished and presentation can happen
+    VkFence _inFlightFence; // wait for frame ending to start a new one
+  };
+
   struct RenderContextVK : public RenderContext {
     bool init(const InitInfo& createInfo) override;
     void shutdown() override;
     bool pickPhysicalDevice(VkSurfaceKHR surface, const std::vector<const char*>& deviceExtensions);
     bool createLogicalDevice(VkSurfaceKHR surface, const std::vector<const char*>& deviceExtensions);
-    bool createCommandPool();
-    bool createCommandBuffer();
-    bool createSyncObjects();
 
     void newPipeline(PipelineHandle handle, ShaderHandle vertex, ShaderHandle fragment, PassHandle pass);
     void newPass(PassHandle handle);
@@ -80,13 +94,9 @@ namespace jgfx::vk {
     VkDevice _device;
     VkQueue _graphicsQueue; // queue supporting draw operations
     VkQueue _presentQueue; // queue supporting presentation operations
-    VkCommandPool _commandPool;
-    VkCommandBuffer _commandBuffer;
-    VkSemaphore _imageAvailableSemaphore; // signal that an image has been acquired from swap chain and is ready for rendering
-    VkSemaphore _renderFinishedSemaphore; // signal that rendering has finished and presentation can happen
-    VkFence _inFlightFence; // wait for frame ending to start a new one
 
     SwapChainVK _swapChain;
+    CommandQueueVK _cmdQueue;
     ShaderVK _shaders[MAX_SHADERS];
     PipelineVK _pipelines[MAX_PIPELINES];
     PassVK _passes[MAX_PASSES];  

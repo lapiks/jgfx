@@ -73,17 +73,22 @@ namespace jgfx::vk {
     if (!_swapChain.createFramebuffers(_device))
       return false;
 
-    if (!createSyncObjects())
+    if (!_cmdQueue.createCommandPool(_device, _physicalDevice, _swapChain._surface))
       return false;
+
+    if (!_cmdQueue.createCommandBuffer(_device))
+      return false;
+
+    if (!_cmdQueue.createSyncObjects(_device))
+      return false;
+
+    _cmdQueue.begin();
 
     return true;
   }
 
   void RenderContextVK::shutdown() {
-    vkDestroySemaphore(_device, _imageAvailableSemaphore, nullptr);
-    vkDestroySemaphore(_device, _renderFinishedSemaphore, nullptr);
-    vkDestroyFence(_device, _inFlightFence, nullptr);
-    vkDestroyCommandPool(_device, _commandPool, nullptr);
+    _cmdQueue.destroy(_device);
     //for (int i = 0; i < MAX_FRAMEBUFFERS; i++) {
     //  _framebuffers[i].destroy(_device);
     //}
@@ -170,50 +175,6 @@ namespace jgfx::vk {
     return true;
   }
 
-  bool RenderContextVK::createCommandPool() {
-    QueueFamilyIndices queueFamilyIndices = utils::findQueueFamilies(_physicalDevice, _swapChain._surface);
-
-    VkCommandPoolCreateInfo poolInfo{};
-    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
-
-    if (vkCreateCommandPool(_device, &poolInfo, nullptr, &_commandPool) != VK_SUCCESS) {
-      return false;
-    }
-
-    return true;
-  }
-
-  bool RenderContextVK::createCommandBuffer() {
-    VkCommandBufferAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = _commandPool;
-    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandBufferCount = 1;
-
-    if (vkAllocateCommandBuffers(_device, &allocInfo, &_commandBuffer) != VK_SUCCESS) {
-      return false;
-    }
-
-    return true;
-  }
-
-  bool RenderContextVK::createSyncObjects() {
-    VkSemaphoreCreateInfo semaphoreInfo{};
-    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-    VkFenceCreateInfo fenceInfo{};
-    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-
-    if (vkCreateSemaphore(_device, &semaphoreInfo, nullptr, &_imageAvailableSemaphore) != VK_SUCCESS ||
-        vkCreateSemaphore(_device, &semaphoreInfo, nullptr, &_renderFinishedSemaphore) != VK_SUCCESS ||
-        vkCreateFence(_device, &fenceInfo, nullptr, &_inFlightFence) != VK_SUCCESS) {
-      return false;
-    }
-  }
-
-
   void RenderContextVK::newShader(ShaderHandle handle, const std::vector<char>& bytecode) {
     _shaders[handle.id].create(
       _device, 
@@ -239,60 +200,38 @@ namespace jgfx::vk {
   }
 
   void RenderContextVK::beginPass(PassHandle pass, uint32_t imageIndex) {
-    VkCommandBufferBeginInfo beginInfo{};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = 0; // Optional
-    beginInfo.pInheritanceInfo = nullptr; // Optional
-
-    if (vkBeginCommandBuffer(_commandBuffer, &beginInfo) != VK_SUCCESS) {
-      return; // todo error handling
-    }
-
-    VkRenderPassBeginInfo renderPassInfo{};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = _passes[pass.id]._renderPass;
-    renderPassInfo.framebuffer = _swapChain._framebuffers[imageIndex]._framebuffer;
-    renderPassInfo.renderArea.offset = { 0, 0 };
-    renderPassInfo.renderArea.extent = _swapChain._extent;
-    VkClearValue clearColor = { {{0.0f, 0.0f, 0.0f, 1.0f}} }; // todo: to be parametrized
-    renderPassInfo.clearValueCount = 1;
-    renderPassInfo.pClearValues = &clearColor;
-
-    vkCmdBeginRenderPass(_commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    _cmdQueue.beginPass(
+      _passes[pass.id]._renderPass,
+      _swapChain._framebuffers[imageIndex]._framebuffer,
+      _swapChain._extent
+    );
   }
 
   void RenderContextVK::applyPipeline(PipelineHandle pipe) {
-    vkCmdBindPipeline(_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelines[pipe.id]._graphicsPipeline);
-
-    VkViewport viewport{};
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = static_cast<float>(_swapChain._extent.width);
-    viewport.height = static_cast<float>(_swapChain._extent.height);
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-    vkCmdSetViewport(_commandBuffer, 0, 1, &viewport);
-
-    VkRect2D scissor{};
-    scissor.offset = { 0, 0 };
-    scissor.extent = _swapChain._extent;
-    vkCmdSetScissor(_commandBuffer, 0, 1, &scissor);
+    _cmdQueue.applyPipeline(
+      _pipelines[pipe.id]._graphicsPipeline,
+      _swapChain._extent
+    );
   }
 
   void RenderContextVK::endPass() {
-    vkCmdEndRenderPass(_commandBuffer);
-
-    if (vkEndCommandBuffer(_commandBuffer) != VK_SUCCESS) {
-      return; // todo error handling
-    }
+    _cmdQueue.endPass();
   }
 
   void RenderContextVK::draw(uint32_t firstVertex, uint32_t vertexCount) {
-    vkCmdDraw(_commandBuffer, vertexCount, 1, firstVertex, 0);
+    _cmdQueue.draw(firstVertex, vertexCount);
   }
 
   void RenderContextVK::commitFrame() {
+    // wait for previous frame to finish
+    vkWaitForFences(_device, 1, &_inFlightFence, VK_TRUE, UINT64_MAX);
 
+    // reset fence
+    vkResetFences(_device, 1, &_inFlightFence);
+
+    uint32_t imageIndex;
+    // acquire image from swap chain when the semaphore is signaled
+    vkAcquireNextImageKHR(_device, _swapChain._swapChain, UINT64_MAX, _imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
   }
 
   bool SwapChainVK::createSwapChain(VkDevice device, VkPhysicalDevice physicalDevice, const Resolution& resolution) {
@@ -649,4 +588,111 @@ namespace jgfx::vk {
   void FramebufferVK::destroy(VkDevice device) {
     vkDestroyFramebuffer(device, _framebuffer, nullptr);
   }
+
+  void CommandQueueVK::destroy(VkDevice device) {
+    vkDestroySemaphore(device, _imageAvailableSemaphore, nullptr);
+    vkDestroySemaphore(device, _renderFinishedSemaphore, nullptr);
+    vkDestroyFence(device, _inFlightFence, nullptr);
+    vkDestroyCommandPool(device, _commandPool, nullptr);
+  }
+
+  bool CommandQueueVK::createCommandPool(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
+    QueueFamilyIndices queueFamilyIndices = utils::findQueueFamilies(physicalDevice, surface);
+
+    VkCommandPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+
+    if (vkCreateCommandPool(device, &poolInfo, nullptr, &_commandPool) != VK_SUCCESS) {
+      return false;
+    }
+
+    return true;
+  }
+
+  bool CommandQueueVK::createCommandBuffer(VkDevice device) {
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.commandPool = _commandPool;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandBufferCount = 1;
+
+    if (vkAllocateCommandBuffers(device, &allocInfo, &_commandBuffer) != VK_SUCCESS) {
+      return false;
+    }
+
+    return true;
+  }
+
+  bool CommandQueueVK::createSyncObjects(VkDevice device) {
+    VkSemaphoreCreateInfo semaphoreInfo{};
+    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    VkFenceCreateInfo fenceInfo{};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+    if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &_imageAvailableSemaphore) != VK_SUCCESS ||
+      vkCreateSemaphore(device, &semaphoreInfo, nullptr, &_renderFinishedSemaphore) != VK_SUCCESS ||
+      vkCreateFence(device, &fenceInfo, nullptr, &_inFlightFence) != VK_SUCCESS) {
+      return false;
+    }
+  }
+
+  void CommandQueueVK::begin() {
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = 0; // Optional
+    beginInfo.pInheritanceInfo = nullptr; // Optional
+
+    if (vkBeginCommandBuffer(_commandBuffer, &beginInfo) != VK_SUCCESS) {
+      return; // todo error handling
+    }
+  }
+
+  void CommandQueueVK::beginPass(VkRenderPass pass, VkFramebuffer framebuffer, const VkExtent2D& extent) {
+    VkRenderPassBeginInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass = pass;
+    renderPassInfo.framebuffer = framebuffer;
+    renderPassInfo.renderArea.offset = { 0, 0 };
+    renderPassInfo.renderArea.extent = extent;
+    VkClearValue clearColor = { {{0.0f, 0.0f, 0.0f, 1.0f}} }; // todo: to be parametrized
+    renderPassInfo.clearValueCount = 1;
+    renderPassInfo.pClearValues = &clearColor;
+
+    vkCmdBeginRenderPass(_commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+  }
+
+  void CommandQueueVK::endPass() {
+    vkCmdEndRenderPass(_commandBuffer);
+
+    if (vkEndCommandBuffer(_commandBuffer) != VK_SUCCESS) {
+      return; // todo error handling
+    }
+  }
+
+  void CommandQueueVK::applyPipeline(VkPipeline pipeline, const VkExtent2D& extent) {
+    vkCmdBindPipeline(_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+    VkViewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = static_cast<float>(extent.width);
+    viewport.height = static_cast<float>(extent.height);
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    vkCmdSetViewport(_commandBuffer, 0, 1, &viewport);
+
+    VkRect2D scissor{};
+    scissor.offset = { 0, 0 };
+    scissor.extent = extent;
+    vkCmdSetScissor(_commandBuffer, 0, 1, &scissor);
+  }
+
+  void CommandQueueVK::draw(uint32_t firstVertex, uint32_t vertexCount) {
+    vkCmdDraw(_commandBuffer, vertexCount, 1, firstVertex, 0);
+  }
+
 }
