@@ -64,8 +64,11 @@ public:
     while (!glfwWindowShouldClose(window)) {
       glfwPollEvents();
 
-      // render
-
+      // render code
+      ctx.beginPass(pass);
+      ctx.applyPipeline(pipeline);
+      ctx.draw(0, 3);
+      ctx.endPass();
     }
   }
 
@@ -74,6 +77,9 @@ public:
     glfwDestroyWindow(window);
     glfwTerminate();
   }
+
+  jgfx::PassHandle pass;
+  jgfx::PipelineHandle pipeline;
 
 private:
   GLFWwindow* window = nullptr;

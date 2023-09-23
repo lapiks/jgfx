@@ -25,8 +25,21 @@ namespace jgfx
     return ctx.newShader(binData);
   }
 
-  ProgramHandle Context::newProgram(const std::vector<char>& binData) {
-    return ctx.newProgram();
+  void Context::beginPass(PassHandle pass) {
+    ctx.beginPass(pass);
   }
+
+  void Context::applyPipeline(PipelineHandle pipe) {
+    ctx.applyPipeline(pipe);
+  }
+
+  void Context::draw(uint32_t firstVertex, uint32_t vertexCount) {
+    ctx.draw(firstVertex, vertexCount);
+  }
+
+  void Context::endPass() {
+    ctx.endPass();
+  }
+
 }
 

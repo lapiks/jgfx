@@ -44,8 +44,20 @@ namespace jgfx {
     return handle;
   }
 
-  ProgramHandle ContextImpl::newProgram() {
-    return ProgramHandle();
+  void ContextImpl::beginPass(PassHandle pass) {
+
+  }
+
+  void ContextImpl::applyPipeline(PipelineHandle pipe) {
+    vkCtx->applyPipeline(pipe);
+  }
+
+  void ContextImpl::draw(uint32_t firstVertex, uint32_t vertexCount) {
+    vkCtx->draw(firstVertex, vertexCount);
+  }
+
+  void ContextImpl::endPass() {
+
   }
 
 }

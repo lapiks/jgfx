@@ -190,15 +190,6 @@ namespace jgfx::vk {
       return false;
     }
 
-    VkCommandBufferBeginInfo beginInfo{};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = 0; // Optional
-    beginInfo.pInheritanceInfo = nullptr; // Optional
-
-    if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-      return false;
-    }
-
     return true;
   }
 
@@ -225,6 +216,63 @@ namespace jgfx::vk {
       _device,
       _swapChain._imageFormat
     );
+  }
+
+  void RenderContextVK::beginPass(PassHandle pass, uint32_t imageIndex) {
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = 0; // Optional
+    beginInfo.pInheritanceInfo = nullptr; // Optional
+
+    if (vkBeginCommandBuffer(_commandBuffer, &beginInfo) != VK_SUCCESS) {
+      return; // todo error handling
+    }
+
+    VkRenderPassBeginInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass = _passes[pass.id]._renderPass;
+    renderPassInfo.framebuffer = _swapChain._framebuffers[imageIndex]._framebuffer;
+    renderPassInfo.renderArea.offset = { 0, 0 };
+    renderPassInfo.renderArea.extent = _swapChain._extent;
+    VkClearValue clearColor = { {{0.0f, 0.0f, 0.0f, 1.0f}} }; // todo: to be parametrized
+    renderPassInfo.clearValueCount = 1;
+    renderPassInfo.pClearValues = &clearColor;
+
+    vkCmdBeginRenderPass(_commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+  }
+
+  void RenderContextVK::applyPipeline(PipelineHandle pipe) {
+    vkCmdBindPipeline(_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelines[pipe.id]._graphicsPipeline);
+
+    VkViewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = static_cast<float>(_swapChain._extent.width);
+    viewport.height = static_cast<float>(_swapChain._extent.height);
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    vkCmdSetViewport(_commandBuffer, 0, 1, &viewport);
+
+    VkRect2D scissor{};
+    scissor.offset = { 0, 0 };
+    scissor.extent = _swapChain._extent;
+    vkCmdSetScissor(_commandBuffer, 0, 1, &scissor);
+  }
+
+  void RenderContextVK::endPass() {
+    vkCmdEndRenderPass(_commandBuffer);
+
+    if (vkEndCommandBuffer(_commandBuffer) != VK_SUCCESS) {
+      return; // todo error handling
+    }
+  }
+
+  void RenderContextVK::draw(uint32_t firstVertex, uint32_t vertexCount) {
+    vkCmdDraw(_commandBuffer, vertexCount, 1, firstVertex, 0);
+  }
+
+  void RenderContextVK::commitFrame() {
+
   }
 
   bool SwapChainVK::createSwapChain(VkDevice device, VkPhysicalDevice physicalDevice, const Resolution& resolution) {

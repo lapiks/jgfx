@@ -67,6 +67,12 @@ namespace jgfx::vk {
     void newPass(PassHandle handle);
     void newShader(ShaderHandle handle, const std::vector<char>& bytecode) override;
 
+    void beginPass(PassHandle pass, uint32_t imageIndex);
+    void applyPipeline(PipelineHandle pipe);
+    void draw(uint32_t firstVertex, uint32_t vertexCount);
+    void endPass();
+    void commitFrame();
+
   private:
     VkInstance _instance;
     VkPhysicalDevice _physicalDevice = VK_NULL_HANDLE;

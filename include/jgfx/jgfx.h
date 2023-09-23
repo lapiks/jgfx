@@ -33,7 +33,6 @@ namespace jgfx {
     Resolution resolution;
   };
 
-  JGFX_HANDLE(ProgramHandle)
   JGFX_HANDLE(ShaderHandle)
   JGFX_HANDLE(PipelineHandle)
   JGFX_HANDLE(PassHandle)
@@ -47,7 +46,10 @@ namespace jgfx {
     PipelineHandle newPipeline(ShaderHandle vertex, ShaderHandle fragment, PassHandle pass);
     PassHandle newPass();
     ShaderHandle newShader(const std::vector<char>& binData);
-    ProgramHandle newProgram(const std::vector<char>& binData);
-    // 
+    // Drawing
+    void beginPass(PassHandle pass);
+    void applyPipeline(PipelineHandle pipe);
+    void draw(uint32_t firstVertex, uint32_t vertexCount);
+    void endPass();
   };
 }
