@@ -51,5 +51,6 @@ namespace jgfx {
     void applyPipeline(PipelineHandle pipe);
     void draw(uint32_t firstVertex, uint32_t vertexCount);
     void endPass();
+    void commitFrame();
   };
 }

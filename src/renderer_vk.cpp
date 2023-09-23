@@ -73,6 +73,9 @@ namespace jgfx::vk {
     if (!_swapChain.createFramebuffers(_device))
       return false;
 
+    if (!createSyncObjects())
+      return false;
+
     return true;
   }
 
@@ -191,6 +194,20 @@ namespace jgfx::vk {
     }
 
     return true;
+  }
+
+  bool RenderContextVK::createSyncObjects() {
+    VkSemaphoreCreateInfo semaphoreInfo{};
+    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    VkFenceCreateInfo fenceInfo{};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+
+    if (vkCreateSemaphore(_device, &semaphoreInfo, nullptr, &_imageAvailableSemaphore) != VK_SUCCESS ||
+        vkCreateSemaphore(_device, &semaphoreInfo, nullptr, &_renderFinishedSemaphore) != VK_SUCCESS ||
+        vkCreateFence(_device, &fenceInfo, nullptr, &_inFlightFence) != VK_SUCCESS) {
+      return false;
+    }
   }
 
 

@@ -69,6 +69,7 @@ public:
       ctx.applyPipeline(pipeline);
       ctx.draw(0, 3);
       ctx.endPass();
+      ctx.commitFrame();
     }
   }
 

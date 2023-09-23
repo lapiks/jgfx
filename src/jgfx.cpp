@@ -41,5 +41,9 @@ namespace jgfx
     ctx.endPass();
   }
 
+  void Context::commitFrame() {
+    ctx.commitFrame();
+  }
+
 }
 

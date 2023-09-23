@@ -62,6 +62,7 @@ namespace jgfx::vk {
     bool createLogicalDevice(VkSurfaceKHR surface, const std::vector<const char*>& deviceExtensions);
     bool createCommandPool();
     bool createCommandBuffer();
+    bool createSyncObjects();
 
     void newPipeline(PipelineHandle handle, ShaderHandle vertex, ShaderHandle fragment, PassHandle pass);
     void newPass(PassHandle handle);
@@ -81,6 +82,9 @@ namespace jgfx::vk {
     VkQueue _presentQueue; // queue supporting presentation operations
     VkCommandPool _commandPool;
     VkCommandBuffer _commandBuffer;
+    VkSemaphore _imageAvailableSemaphore; // signal that an image has been acquired from swap chain and is ready for rendering
+    VkSemaphore _renderFinishedSemaphore; // signal that rendering has finished and presentation can happen
+    VkFence _inFlightFence; // wait for frame ending to start a new one
 
     SwapChainVK _swapChain;
     ShaderVK _shaders[MAX_SHADERS];

@@ -45,7 +45,7 @@ namespace jgfx {
   }
 
   void ContextImpl::beginPass(PassHandle pass) {
-
+    vkCtx->beginPass(pass);
   }
 
   void ContextImpl::applyPipeline(PipelineHandle pipe) {
@@ -57,7 +57,11 @@ namespace jgfx {
   }
 
   void ContextImpl::endPass() {
+    vkCtx->endPass();
+  }
 
+  void ContextImpl::commitFrame() {
+    vkCtx->commitFrame();
   }
 
 }
