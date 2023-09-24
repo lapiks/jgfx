@@ -16,7 +16,7 @@ namespace jgfx {
 
 namespace jgfx::vk { 
   struct FramebufferVK {
-    bool create(VkDevice device, const std::vector<VkImageView>& attachments, VkExtent2D swapChainExtent, VkRenderPass renderPass);
+    bool create(VkDevice device, const VkImageView* attachments, VkExtent2D swapChainExtent, VkRenderPass renderPass);
     void destroy(VkDevice device);
     VkFramebuffer _framebuffer;
   };
@@ -25,7 +25,7 @@ namespace jgfx::vk {
     bool createSwapChain(VkDevice device, VkPhysicalDevice physicalDevice, const Resolution& resolution);
     bool createSurface(VkInstance instance, const PlatformData& platformData);
     bool createImageViews(VkDevice device);
-    bool createFramebuffers(VkDevice device);
+    bool createFramebuffers(VkDevice device, VkRenderPass renderPass);
     void destroy(VkDevice device, VkInstance instance);
     void acquire(VkDevice device);
     VkSurfaceKHR _surface;
@@ -37,6 +37,7 @@ namespace jgfx::vk {
     std::vector<VkImage> _images;
     std::vector<VkImageView> _imageViews;
     std::vector<FramebufferVK> _framebuffers;
+    uint32_t _currentImageIdx;
   };
 
   struct ShaderVK {
@@ -69,11 +70,10 @@ namespace jgfx::vk {
     void endPass();
     void applyPipeline(VkPipeline pipeline, const VkExtent2D& extent);
     void draw(uint32_t firstVertex, uint32_t vertexCount);
+    void submit();
     VkCommandPool _commandPool;
     VkCommandBuffer _commandBuffer;
-    VkSemaphore _imageAvailableSemaphore; // signal that an image has been acquired from swap chain and is ready for rendering
-    VkSemaphore _renderFinishedSemaphore; // signal that rendering has finished and presentation can happen
-    VkFence _inFlightFence; // wait for frame ending to start a new one
+    //VkFence _inFlightFence; // wait for frame ending to start a new one
   };
 
   struct RenderContextVK : public RenderContext {
@@ -86,7 +86,7 @@ namespace jgfx::vk {
     void newPass(PassHandle handle);
     void newShader(ShaderHandle handle, const std::vector<char>& bytecode) override;
 
-    void beginPass(PassHandle pass, uint32_t imageIndex);
+    void beginPass(PassHandle pass);
     void applyPipeline(PipelineHandle pipe);
     void draw(uint32_t firstVertex, uint32_t vertexCount);
     void endPass();
@@ -98,6 +98,8 @@ namespace jgfx::vk {
     VkDevice _device;
     VkQueue _graphicsQueue; // queue supporting draw operations
     VkQueue _presentQueue; // queue supporting presentation operations
+
+    VkSemaphore _renderFinishedSemaphore; // signal that rendering has finished and presentation can happen
 
     SwapChainVK _swapChain;
     CommandQueueVK _cmdQueue;

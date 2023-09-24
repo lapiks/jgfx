@@ -55,9 +55,8 @@ public:
     jgfx::ShaderHandle vs = ctx.newShader(vertBin);
     jgfx::ShaderHandle fs = ctx.newShader(fragBin);
 
-    jgfx::PassHandle pass = ctx.newPass();
-
-    jgfx::PipelineHandle pipeline = ctx.newPipeline(vs, fs, pass);
+    _pass = ctx.newPass();
+    _pipeline = ctx.newPipeline(vs, fs, _pass);
   }
 
   void draw() {
@@ -65,8 +64,8 @@ public:
       glfwPollEvents();
 
       // render code
-      ctx.beginPass(pass);
-      ctx.applyPipeline(pipeline);
+      ctx.beginPass(_pass);
+      ctx.applyPipeline(_pipeline);
       ctx.draw(0, 3);
       ctx.endPass();
       ctx.commitFrame();
@@ -79,8 +78,8 @@ public:
     glfwTerminate();
   }
 
-  jgfx::PassHandle pass;
-  jgfx::PipelineHandle pipeline;
+  jgfx::PassHandle _pass;
+  jgfx::PipelineHandle _pipeline;
 
 private:
   GLFWwindow* window = nullptr;
