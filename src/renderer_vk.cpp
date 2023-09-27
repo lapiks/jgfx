@@ -106,14 +106,6 @@ namespace jgfx::vk {
     if (!_cmdQueue.createSyncObjects(_device))
       return false;
 
-    // todo: move this semaphore construction
-    VkSemaphoreCreateInfo semaphoreInfo{};
-    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-    if (vkCreateSemaphore(_device, &semaphoreInfo, nullptr, &_renderFinishedSemaphore) != VK_SUCCESS) {
-      return false;
-    }
-
     _swapChain.acquire(_device);
 
     _cmdQueue.begin();
@@ -124,8 +116,6 @@ namespace jgfx::vk {
   void RenderContextVK::shutdown() {
      // wait for finishing drawings
     vkDeviceWaitIdle(_device);
-
-    vkDestroySemaphore(_device, _renderFinishedSemaphore, nullptr);
 
     _cmdQueue.destroy(_device);
     //for (int i = 0; i < MAX_FRAMEBUFFERS; i++) {
@@ -218,8 +208,8 @@ namespace jgfx::vk {
     }
 
     // Get queues created alongside logical device
-    vkGetDeviceQueue(_device, indices.graphicsFamily.value(), 0, &_graphicsQueue);
-    vkGetDeviceQueue(_device, indices.presentFamily.value(), 0, &_presentQueue);
+    vkGetDeviceQueue(_device, indices.graphicsFamily.value(), 0, &_cmdQueue._graphicsQueue);
+    vkGetDeviceQueue(_device, indices.presentFamily.value(), 0, &_swapChain._presentQueue);
 
     return true;
   }
@@ -295,45 +285,12 @@ namespace jgfx::vk {
 
   void RenderContextVK::commitFrame() {
     _cmdQueue.end();
-
-    // wait for previous frame to finish
-    //vkWaitForFences(_device, 1, &_cmdQueue._inFlightFence, VK_TRUE, UINT64_MAX);
-    //vkResetFences(_device, 1, &_cmdQueue._inFlightFence);
     
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    _cmdQueue.setWaitSemaphore(_swapChain._imageAvailableSemaphore);
+    _cmdQueue.submit();
 
-    // wait for image available signal
-    VkSemaphore waitSemaphores[] = { _swapChain._imageAvailableSemaphore };
-    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-    submitInfo.waitSemaphoreCount = 1;
-    submitInfo.pWaitSemaphores = waitSemaphores;
-    submitInfo.pWaitDstStageMask = waitStages;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &_cmdQueue._commandBuffer;
-
-    // signal on renderFinished semaphore
-    VkSemaphore signalSemaphores[] = { _renderFinishedSemaphore };
-    submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores = signalSemaphores;
-
-    // will signal inFlightFence when the command queue will finish execution
-    if (vkQueueSubmit(_graphicsQueue, 1, &submitInfo, _cmdQueue._inFlightFence) != VK_SUCCESS) {
-      return; // todo error handling
-    }
-
-    VkPresentInfoKHR presentInfo{};
-    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-    presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores = signalSemaphores; // wait for renderFinished semaphore to be signaled
-
-    VkSwapchainKHR swapChains[] = { _swapChain._swapChain };
-    presentInfo.swapchainCount = 1;
-    presentInfo.pSwapchains = swapChains;
-    presentInfo.pImageIndices = &_swapChain._currentImageIdx;
-
-    // submit request to present image to the swap chain
-    vkQueuePresentKHR(_presentQueue, &presentInfo);
+    _swapChain.setWaitSemaphore(_cmdQueue._renderFinishedSemaphore);
+    _swapChain.present();
 
     // wait to start a new frame
     vkWaitForFences(_device, 1, &_cmdQueue._inFlightFence, VK_TRUE, UINT64_MAX);
@@ -493,6 +450,26 @@ namespace jgfx::vk {
 
   void SwapChainVK::acquire(VkDevice device) {
     vkAcquireNextImageKHR(device, _swapChain, UINT64_MAX, _imageAvailableSemaphore, VK_NULL_HANDLE, &_currentImageIdx);
+  }
+
+  void SwapChainVK::present() {
+    VkPresentInfoKHR presentInfo{};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    presentInfo.waitSemaphoreCount = 1;
+    VkSemaphore waitSmeaphores[] = { _waitSemaphore };
+    presentInfo.pWaitSemaphores = { waitSmeaphores }; // wait for renderFinished semaphore to be signaled
+
+    VkSwapchainKHR swapChains[] = { _swapChain };
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = swapChains;
+    presentInfo.pImageIndices = &_currentImageIdx;
+
+    // submit request to present image to the swap chain
+    vkQueuePresentKHR(_presentQueue, &presentInfo);
+  }
+
+  void SwapChainVK::setWaitSemaphore(VkSemaphore waitSemaphore) {
+    _waitSemaphore = waitSemaphore;
   }
 
   bool ShaderVK::create(VkDevice device, const std::vector<char>& bytecode) {
@@ -728,6 +705,7 @@ namespace jgfx::vk {
   }
 
   void CommandQueueVK::destroy(VkDevice device) {
+    vkDestroySemaphore(device, _renderFinishedSemaphore, nullptr);
     vkDestroyFence(device, _inFlightFence, nullptr);
     vkDestroyCommandPool(device, _commandPool, nullptr);
   }
@@ -765,7 +743,11 @@ namespace jgfx::vk {
     VkFenceCreateInfo fenceInfo{};
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 
-    if (vkCreateFence(device, &fenceInfo, nullptr, &_inFlightFence) != VK_SUCCESS) {
+    VkSemaphoreCreateInfo semaphoreInfo{};
+    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &_renderFinishedSemaphore) != VK_SUCCESS ||
+        vkCreateFence(device, &fenceInfo, nullptr, &_inFlightFence) != VK_SUCCESS) {
       return false;
     }
 
@@ -831,25 +813,31 @@ namespace jgfx::vk {
   }
 
   void CommandQueueVK::submit() {
-    //VkSubmitInfo submitInfo{};
-    //submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-    //// wait for image available signal
-    //VkSemaphore waitSemaphores[] = { imageAvailableSemaphore };
-    //VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-    //submitInfo.waitSemaphoreCount = 1;
-    //submitInfo.pWaitSemaphores = waitSemaphores;
-    //submitInfo.pWaitDstStageMask = waitStages;
-    //submitInfo.commandBufferCount = 1;
-    //submitInfo.pCommandBuffers = &_commandBuffer;
+    // wait for image available signal
+    VkSemaphore waitSemaphores[] = { _waitSemaphore };
+    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+    submitInfo.waitSemaphoreCount = 1;
+    submitInfo.pWaitSemaphores = waitSemaphores;
+    submitInfo.pWaitDstStageMask = waitStages;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &_commandBuffer;
 
-    //// signal on renderfinished semaphore
-    //VkSemaphore signalSemaphores[] = { renderFinishedSemaphore };
-    //submitInfo.signalSemaphoreCount = 1;
-    //submitInfo.pSignalSemaphores = signalSemaphores;
+    // signal on renderFinished semaphore
+    VkSemaphore signalSemaphores[] = { _renderFinishedSemaphore };
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = signalSemaphores;
 
-    //if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFence) != VK_SUCCESS) {
-    //  throw std::runtime_error("failed to submit draw command buffer!");
-    //}
+    // will signal inFlightFence when the command queue will finish execution
+    if (vkQueueSubmit(_graphicsQueue, 1, &submitInfo, _inFlightFence) != VK_SUCCESS) {
+      return; // todo error handling
+    }
   }
+
+  void CommandQueueVK::setWaitSemaphore(VkSemaphore waitSemaphore) {
+    _waitSemaphore = waitSemaphore;
+  }
+
 }

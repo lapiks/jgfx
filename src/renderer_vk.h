@@ -8,6 +8,7 @@ constexpr int MAX_SHADERS = 512;
 constexpr int MAX_PIPELINES = 512;
 constexpr int MAX_PASSES = 512;
 constexpr int MAX_FRAMEBUFFERS = 512;
+constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
 namespace jgfx {
   struct InitInfo;
@@ -28,11 +29,15 @@ namespace jgfx::vk {
     bool createFramebuffers(VkDevice device, VkRenderPass renderPass);
     void destroy(VkDevice device, VkInstance instance);
     void acquire(VkDevice device);
+    void present();
+    void setWaitSemaphore(VkSemaphore waitSemaphore);
     VkSurfaceKHR _surface;
     VkSwapchainKHR _swapChain;
+    VkQueue _presentQueue; // queue supporting presentation operations
     VkFormat _imageFormat;
     VkExtent2D _extent;
     VkSemaphore _imageAvailableSemaphore; // signal that an image has been acquired from swap chain and is ready for rendering
+    VkSemaphore _waitSemaphore;
     std::vector<VkImage> _images;
     std::vector<VkImageView> _imageViews;
     std::vector<FramebufferVK> _framebuffers;
@@ -70,9 +75,13 @@ namespace jgfx::vk {
     void applyPipeline(VkPipeline pipeline, const VkExtent2D& extent);
     void draw(uint32_t firstVertex, uint32_t vertexCount);
     void submit();
+    void setWaitSemaphore(VkSemaphore waitSemaphore);
     VkCommandPool _commandPool;
     VkCommandBuffer _commandBuffer;
     VkFence _inFlightFence; // wait for frame ending to start a new one
+    VkQueue _graphicsQueue; // queue supporting draw operations
+    VkSemaphore _renderFinishedSemaphore; // signal that rendering has finished and presentation can happen
+    VkSemaphore _waitSemaphore;
   };
 
   struct RenderContextVK : public RenderContext {
@@ -98,10 +107,6 @@ namespace jgfx::vk {
     VkDebugUtilsMessengerEXT _debugMessenger;
     VkPhysicalDevice _physicalDevice = VK_NULL_HANDLE;
     VkDevice _device;
-    VkQueue _graphicsQueue; // queue supporting draw operations
-    VkQueue _presentQueue; // queue supporting presentation operations
-
-    VkSemaphore _renderFinishedSemaphore; // signal that rendering has finished and presentation can happen
     
     SwapChainVK _swapChain;
     CommandQueueVK _cmdQueue;
