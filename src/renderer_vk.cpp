@@ -6,8 +6,15 @@
 #include "utils_vk.h"
 
 #include <set>
+#include <iostream>
 
 namespace jgfx::vk {
+  static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
+    std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+
+    return VK_FALSE;
+}
+
   bool RenderContextVK::init(const InitInfo& initInfo) {
 #ifdef NDEBUG
     const bool enableValidationLayers = false;
@@ -26,7 +33,7 @@ namespace jgfx::vk {
     // Application def
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.pApplicationName = "Hello Triangle";
+    appInfo.pApplicationName = "JGFX";
     appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     appInfo.pEngineName = "No Engine";
     appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
@@ -39,16 +46,25 @@ namespace jgfx::vk {
     vkCreateInfo.enabledExtensionCount = initInfo.extensionCount;
     vkCreateInfo.ppEnabledExtensionNames = initInfo.extensionNames;
 
+    VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
     if (enableValidationLayers) {
       vkCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
       vkCreateInfo.ppEnabledLayerNames = validationLayers.data();
+
+      debugCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+      debugCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+      debugCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+      debugCreateInfo.pfnUserCallback = debugCallback;
+      vkCreateInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
     }
     else {
       vkCreateInfo.enabledLayerCount = 0;
+      vkCreateInfo.pNext = nullptr;
     }
 
     // Instance creation
-    VkResult result = vkCreateInstance(&vkCreateInfo, nullptr, &_instance);
+    if (vkCreateInstance(&vkCreateInfo, nullptr, &_instance) != VK_SUCCESS)
+      return false;
 
     if (!_swapChain.createSurface(_instance, initInfo.platformData))
       return false;
@@ -70,8 +86,11 @@ namespace jgfx::vk {
     if (!_swapChain.createImageViews(_device))
       return false;
 
-    //if (!_swapChain.createFramebuffers(_device))
-    //  return false;
+    if (!_defaultPass.create(_device, _swapChain._imageFormat))
+      return false;
+
+    if (!_swapChain.createFramebuffers(_device, _defaultPass._renderPass))
+      return false;
 
     if (!_cmdQueue.createCommandPool(_device, _physicalDevice, _swapChain._surface))
       return false;
@@ -79,8 +98,8 @@ namespace jgfx::vk {
     if (!_cmdQueue.createCommandBuffer(_device))
       return false;
 
-    //if (!_cmdQueue.createSyncObjects(_device))
-    //  return false;
+    if (!_cmdQueue.createSyncObjects(_device))
+      return false;
 
     // todo: move this semaphore construction
     VkSemaphoreCreateInfo semaphoreInfo{};
@@ -90,9 +109,11 @@ namespace jgfx::vk {
       return false;
     }
 
-    // wait for previous frame to finish
-    //vkWaitForFences(_device, 1, &_swapChain._inFlightFence, VK_TRUE, UINT64_MAX);
-    vkResetFences(_device, 1, &_swapChain._inFlightFence);
+    //// wait for previous frame to finish
+    //vkWaitForFences(_device, 1, &_cmdQueue._inFlightFence, VK_TRUE, UINT64_MAX);
+    //vkResetFences(_device, 1, &_cmdQueue._inFlightFence);
+
+    _swapChain.acquire(_device);
 
     _cmdQueue.begin();
 
@@ -100,6 +121,9 @@ namespace jgfx::vk {
   }
 
   void RenderContextVK::shutdown() {
+     // wait for finishing drawings
+    vkDeviceWaitIdle(_device);
+
     _cmdQueue.destroy(_device);
     //for (int i = 0; i < MAX_FRAMEBUFFERS; i++) {
     //  _framebuffers[i].destroy(_device);
@@ -199,7 +223,8 @@ namespace jgfx::vk {
       _device, 
       _shaders[vertex.id], 
       _shaders[fragment.id],
-      _passes[pass.id]
+      _defaultPass
+      //_passes[pass.id]
     );
   }
 
@@ -211,9 +236,17 @@ namespace jgfx::vk {
     );
   }
 
+  void RenderContextVK::beginDefaultPass() {
+    _cmdQueue.beginPass(
+      _defaultPass._renderPass,
+      _swapChain._framebuffers[_swapChain._currentImageIdx]._framebuffer,
+      _swapChain._extent
+    );
+  }
+
   void RenderContextVK::beginPass(PassHandle pass) {
-    if(_swapChain._framebuffers.empty())
-      _swapChain.createFramebuffers(_device, _passes[pass.id]._renderPass);
+    //if(_swapChain._framebuffers.empty())
+    //  _swapChain.createFramebuffers(_device, _passes[pass.id]._renderPass);
 
     _cmdQueue.beginPass(
       _passes[pass.id]._renderPass,
@@ -239,7 +272,10 @@ namespace jgfx::vk {
 
   void RenderContextVK::commitFrame() {
     _cmdQueue.end();
-    _swapChain.acquire(_device);
+
+    // wait for previous frame to finish
+    //vkWaitForFences(_device, 1, &_cmdQueue._inFlightFence, VK_TRUE, UINT64_MAX);
+    //vkResetFences(_device, 1, &_cmdQueue._inFlightFence);
     
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -258,7 +294,8 @@ namespace jgfx::vk {
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    if (vkQueueSubmit(_graphicsQueue, 1, &submitInfo, _swapChain._inFlightFence) != VK_SUCCESS) {
+    // will signal inFlightFence when the command queue will finish execution
+    if (vkQueueSubmit(_graphicsQueue, 1, &submitInfo, _cmdQueue._inFlightFence) != VK_SUCCESS) {
       return; // todo error handling
     }
 
@@ -275,9 +312,12 @@ namespace jgfx::vk {
     // submit request to present image to the swap chain
     vkQueuePresentKHR(_presentQueue, &presentInfo);
 
-    // wait for previous frame to finish
-    vkWaitForFences(_device, 1, &_swapChain._inFlightFence, VK_TRUE, UINT64_MAX);
-    vkResetFences(_device, 1, &_swapChain._inFlightFence);
+    // wait to start a new frame
+    vkWaitForFences(_device, 1, &_cmdQueue._inFlightFence, VK_TRUE, UINT64_MAX);
+    vkResetFences(_device, 1, &_cmdQueue._inFlightFence);
+
+    // start a new frame
+    _swapChain.acquire(_device);
 
     _cmdQueue.begin();
   }
@@ -328,8 +368,6 @@ namespace jgfx::vk {
     }
     else {
       createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE; // an image is owned by one queue family at a time
-      createInfo.queueFamilyIndexCount = 0; // Optional
-      createInfo.pQueueFamilyIndices = nullptr; // Optional
     }
 
     // Swap chain creation
@@ -352,14 +390,6 @@ namespace jgfx::vk {
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
     if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &_imageAvailableSemaphore)) {
-      return false;
-    }
-
-    VkFenceCreateInfo fenceInfo{};
-    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-    if (vkCreateFence(device, &fenceInfo, nullptr, &_inFlightFence) != VK_SUCCESS) {
       return false;
     }
 
@@ -415,7 +445,8 @@ namespace jgfx::vk {
     // Create framebuffer for each image
     _framebuffers.resize(_images.size());
     for (size_t i = 0; i < _images.size(); i++) {
-      _framebuffers[i].create(device, _imageViews.data(), _extent, renderPass);
+      if (!_framebuffers[i].create(device, _imageViews.data(), _extent, renderPass))
+        return false;
     }
 
     return true;
@@ -576,7 +607,6 @@ namespace jgfx::vk {
     pipelineInfo.renderPass = pass._renderPass;
     pipelineInfo.subpass = 0; // which subpass to use
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional. To derive a pass from another.
-    pipelineInfo.basePipelineIndex = -1; // Optional. To derive a pass from another.
 
     // Pipeline creation
     if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_graphicsPipeline) != VK_SUCCESS) {
@@ -615,14 +645,6 @@ namespace jgfx::vk {
     subpass.colorAttachmentCount = 1;
     subpass.pColorAttachments = &colorAttachmentRef;
 
-    // Pass def
-    VkRenderPassCreateInfo renderPassInfo{};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassInfo.attachmentCount = 1;
-    renderPassInfo.pAttachments = &colorAttachment;
-    renderPassInfo.subpassCount = 1;
-    renderPassInfo.pSubpasses = &subpass;
-
     // Subpass dependencies
     VkSubpassDependency dependency{};
     dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -631,6 +653,14 @@ namespace jgfx::vk {
     dependency.srcAccessMask = 0;
     dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+    // Pass def
+    VkRenderPassCreateInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderPassInfo.attachmentCount = 1;
+    renderPassInfo.pAttachments = &colorAttachment;
+    renderPassInfo.subpassCount = 1;
+    renderPassInfo.pSubpasses = &subpass;
     renderPassInfo.dependencyCount = 1;
     renderPassInfo.pDependencies = &dependency;
 
@@ -661,6 +691,8 @@ namespace jgfx::vk {
     if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &_framebuffer) != VK_SUCCESS) {
       return false;
     }
+
+    return true;
   }
 
   void FramebufferVK::destroy(VkDevice device) {
@@ -668,7 +700,7 @@ namespace jgfx::vk {
   }
 
   void CommandQueueVK::destroy(VkDevice device) {
-    //vkDestroyFence(device, _inFlightFence, nullptr);
+    vkDestroyFence(device, _inFlightFence, nullptr);
     vkDestroyCommandPool(device, _commandPool, nullptr);
   }
 
@@ -702,27 +734,22 @@ namespace jgfx::vk {
   }
 
   bool CommandQueueVK::createSyncObjects(VkDevice device) {
-    VkSemaphoreCreateInfo semaphoreInfo{};
-    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
     VkFenceCreateInfo fenceInfo{};
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+    //fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-    //if (//vkCreateSemaphore(device, &semaphoreInfo, nullptr, &_imageAvailableSemaphore) != VK_SUCCESS ||
-    //    //vkCreateSemaphore(device, &semaphoreInfo, nullptr, &_renderFinishedSemaphore) != VK_SUCCESS ||
-    //    vkCreateFence(device, &fenceInfo, nullptr, &_inFlightFence) != VK_SUCCESS) {
-    //  return false;
-    //}
+    if (vkCreateFence(device, &fenceInfo, nullptr, &_inFlightFence) != VK_SUCCESS) {
+      return false;
+    }
 
     return true;
   }
 
   void CommandQueueVK::begin() {
+    vkResetCommandBuffer(_commandBuffer, /*VkCommandBufferResetFlagBits*/ 0);
+
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = 0; // Optional
-    beginInfo.pInheritanceInfo = nullptr; // Optional
 
     if (vkBeginCommandBuffer(_commandBuffer, &beginInfo) != VK_SUCCESS) {
       return; // todo error handling
@@ -733,7 +760,6 @@ namespace jgfx::vk {
     if (vkEndCommandBuffer(_commandBuffer) != VK_SUCCESS) {
       return; // todo error handling
     }
-    //vkResetCommandBuffer(_commandBuffer, 0);
   }
 
   void CommandQueueVK::beginPass(VkRenderPass pass, VkFramebuffer framebuffer, const VkExtent2D& extent) {
@@ -743,6 +769,7 @@ namespace jgfx::vk {
     renderPassInfo.framebuffer = framebuffer;
     renderPassInfo.renderArea.offset = { 0, 0 };
     renderPassInfo.renderArea.extent = extent;
+
     VkClearValue clearColor = { {{0.0f, 0.0f, 0.0f, 1.0f}} }; // todo: to be parametrized
     renderPassInfo.clearValueCount = 1;
     renderPassInfo.pClearValues = &clearColor;

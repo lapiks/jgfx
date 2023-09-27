@@ -33,7 +33,6 @@ namespace jgfx::vk {
     VkFormat _imageFormat;
     VkExtent2D _extent;
     VkSemaphore _imageAvailableSemaphore; // signal that an image has been acquired from swap chain and is ready for rendering
-    VkFence _inFlightFence; // wait for frame ending to start a new one
     std::vector<VkImage> _images;
     std::vector<VkImageView> _imageViews;
     std::vector<FramebufferVK> _framebuffers;
@@ -73,7 +72,7 @@ namespace jgfx::vk {
     void submit();
     VkCommandPool _commandPool;
     VkCommandBuffer _commandBuffer;
-    //VkFence _inFlightFence; // wait for frame ending to start a new one
+    VkFence _inFlightFence; // wait for frame ending to start a new one
   };
 
   struct RenderContextVK : public RenderContext {
@@ -86,6 +85,7 @@ namespace jgfx::vk {
     void newPass(PassHandle handle);
     void newShader(ShaderHandle handle, const std::vector<char>& bytecode) override;
 
+    void beginDefaultPass();
     void beginPass(PassHandle pass);
     void applyPipeline(PipelineHandle pipe);
     void draw(uint32_t firstVertex, uint32_t vertexCount);
@@ -100,9 +100,10 @@ namespace jgfx::vk {
     VkQueue _presentQueue; // queue supporting presentation operations
 
     VkSemaphore _renderFinishedSemaphore; // signal that rendering has finished and presentation can happen
-
+    
     SwapChainVK _swapChain;
     CommandQueueVK _cmdQueue;
+    PassVK _defaultPass;
     ShaderVK _shaders[MAX_SHADERS];
     PipelineVK _pipelines[MAX_PIPELINES];
     PassVK _passes[MAX_PASSES];  

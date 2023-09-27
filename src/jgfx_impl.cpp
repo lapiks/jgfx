@@ -44,6 +44,10 @@ namespace jgfx {
     return handle;
   }
 
+  void ContextImpl::beginDefaultPass() {
+    vkCtx->beginDefaultPass();
+  }
+
   void ContextImpl::beginPass(PassHandle pass) {
     vkCtx->beginPass(pass);
   }

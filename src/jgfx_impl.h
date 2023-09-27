@@ -17,6 +17,7 @@ namespace jgfx {
     PassHandle newPass();
     ShaderHandle newShader(const std::vector<char>& bytecode);
 
+    void beginDefaultPass();
     void beginPass(PassHandle pass);
     void applyPipeline(PipelineHandle pipe);
     void draw(uint32_t firstVertex, uint32_t vertexCount);

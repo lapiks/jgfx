@@ -25,6 +25,10 @@ namespace jgfx
     return ctx.newShader(binData);
   }
 
+  void Context::beginDefaultPass() {
+    ctx.beginDefaultPass();
+  }
+
   void Context::beginPass(PassHandle pass) {
     ctx.beginPass(pass);
   }

@@ -64,7 +64,7 @@ public:
       glfwPollEvents();
 
       // render code
-      ctx.beginPass(_pass);
+      ctx.beginDefaultPass();
       ctx.applyPipeline(_pipeline);
       ctx.draw(0, 3);
       ctx.endPass();
