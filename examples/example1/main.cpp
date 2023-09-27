@@ -45,7 +45,6 @@ public:
 
     jgfx::InitInfo initInfos;
     initInfos.platformData = pd;
-    //initInfos.extensionCount = extensionCount;
     initInfos.extensionNames = extensions;
     initInfos.resolution = { WIDTH, HEIGHT };
 
