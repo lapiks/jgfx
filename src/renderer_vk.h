@@ -8,7 +8,7 @@ constexpr int MAX_SHADERS = 512;
 constexpr int MAX_PIPELINES = 512;
 constexpr int MAX_PASSES = 512;
 constexpr int MAX_FRAMEBUFFERS = 512;
-constexpr int MAX_FRAMES_IN_FLIGHT = 2;
+constexpr int MAX_FRAMES_IN_FLIGHT = 3;
 
 namespace jgfx {
   struct InitInfo;
