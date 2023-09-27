@@ -114,10 +114,6 @@ namespace jgfx::vk {
       return false;
     }
 
-    //// wait for previous frame to finish
-    //vkWaitForFences(_device, 1, &_cmdQueue._inFlightFence, VK_TRUE, UINT64_MAX);
-    //vkResetFences(_device, 1, &_cmdQueue._inFlightFence);
-
     _swapChain.acquire(_device);
 
     _cmdQueue.begin();
@@ -129,6 +125,8 @@ namespace jgfx::vk {
      // wait for finishing drawings
     vkDeviceWaitIdle(_device);
 
+    vkDestroySemaphore(_device, _renderFinishedSemaphore, nullptr);
+
     _cmdQueue.destroy(_device);
     //for (int i = 0; i < MAX_FRAMEBUFFERS; i++) {
     //  _framebuffers[i].destroy(_device);
@@ -139,19 +137,21 @@ namespace jgfx::vk {
     for (int i = 0; i < MAX_PASSES; i++) {
       _passes[i].destroy(_device);
     }
+    _defaultPass.destroy(_device);
     for (int i = 0; i < MAX_SHADERS; i++) {
       _shaders[i].destroy(_device);
     }
-    vkDestroyDevice(_device, nullptr);
     _swapChain.destroy(_device, _instance);
-
-#ifdef DEBUG
+#ifdef NDEBUG
+    // nondebug
+#else
     auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(_instance, "vkDestroyDebugUtilsMessengerEXT");
     if (func != nullptr) {
       func(_instance, _debugMessenger, nullptr);
     }
 #endif
 
+    vkDestroyDevice(_device, nullptr);
     vkDestroyInstance(_instance, nullptr);
   }
 
@@ -468,7 +468,11 @@ namespace jgfx::vk {
     // Create framebuffer for each image
     _framebuffers.resize(_images.size());
     for (size_t i = 0; i < _images.size(); i++) {
-      if (!_framebuffers[i].create(device, _imageViews.data(), _extent, renderPass))
+      VkImageView attachments[] = {
+        _imageViews[i]
+      };
+
+      if (!_framebuffers[i].create(device, attachments, _extent, renderPass))
         return false;
     }
 
@@ -476,6 +480,7 @@ namespace jgfx::vk {
   }
 
   void SwapChainVK::destroy(VkDevice device, VkInstance instance) {
+    vkDestroySemaphore(device, _imageAvailableSemaphore, nullptr);
     for (auto framebuffer : _framebuffers) {
       framebuffer.destroy(device);
     }
@@ -759,7 +764,6 @@ namespace jgfx::vk {
   bool CommandQueueVK::createSyncObjects(VkDevice device) {
     VkFenceCreateInfo fenceInfo{};
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    //fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
     if (vkCreateFence(device, &fenceInfo, nullptr, &_inFlightFence) != VK_SUCCESS) {
       return false;
