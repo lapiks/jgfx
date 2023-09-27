@@ -28,8 +28,8 @@ namespace jgfx {
 
   struct InitInfo {
     PlatformData platformData;
-    uint32_t extensionCount = 0;
-    const char** extensionNames = nullptr;
+    //uint32_t extensionCount = 0;
+    std::vector<const char*> extensionNames;
     Resolution resolution;
   };
 

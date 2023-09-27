@@ -22,7 +22,6 @@ namespace jgfx::vk {
     const bool enableValidationLayers = true;
 #endif
     const std::vector<const char*> validationLayers = {
-
       "VK_LAYER_KHRONOS_validation"
     };
 
@@ -43,8 +42,8 @@ namespace jgfx::vk {
     VkInstanceCreateInfo vkCreateInfo{};
     vkCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     vkCreateInfo.pApplicationInfo = &appInfo;
-    vkCreateInfo.enabledExtensionCount = initInfo.extensionCount;
-    vkCreateInfo.ppEnabledExtensionNames = initInfo.extensionNames;
+    vkCreateInfo.enabledExtensionCount = static_cast<uint32_t>(initInfo.extensionNames.size());
+    vkCreateInfo.ppEnabledExtensionNames = initInfo.extensionNames.data();
 
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
     if (enableValidationLayers) {
@@ -65,6 +64,12 @@ namespace jgfx::vk {
     // Instance creation
     if (vkCreateInstance(&vkCreateInfo, nullptr, &_instance) != VK_SUCCESS)
       return false;
+
+    if (enableValidationLayers) {
+      if (createDebugUtilsMessengerEXT(&debugCreateInfo, nullptr) != VK_SUCCESS) {
+        return false;
+      }
+    }
 
     if (!_swapChain.createSurface(_instance, initInfo.platformData))
       return false;
@@ -139,6 +144,14 @@ namespace jgfx::vk {
     }
     vkDestroyDevice(_device, nullptr);
     _swapChain.destroy(_device, _instance);
+
+#ifdef DEBUG
+    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(_instance, "vkDestroyDebugUtilsMessengerEXT");
+    if (func != nullptr) {
+      func(_instance, _debugMessenger, nullptr);
+    }
+#endif
+
     vkDestroyInstance(_instance, nullptr);
   }
 
@@ -209,6 +222,16 @@ namespace jgfx::vk {
     vkGetDeviceQueue(_device, indices.presentFamily.value(), 0, &_presentQueue);
 
     return true;
+  }
+
+  VkResult RenderContextVK::createDebugUtilsMessengerEXT(const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator) {
+    auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(_instance, "vkCreateDebugUtilsMessengerEXT");
+    if (func != nullptr) {
+      return func(_instance, pCreateInfo, pAllocator, &_debugMessenger);
+    }
+    else {
+      return VK_ERROR_EXTENSION_NOT_PRESENT;
+    }
   }
 
   void RenderContextVK::newShader(ShaderHandle handle, const std::vector<char>& bytecode) {

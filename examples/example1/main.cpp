@@ -37,14 +37,16 @@ public:
     std::cout << extensionCount << " extensions supported\n";
 
     const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&extensionCount);
+    std::vector<const char*> extensions(glfwExtensions, glfwExtensions + extensionCount);
+    extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
     jgfx::PlatformData pd;
     pd.nativeWindowHandle = glfwGetWin32Window(window);
 
     jgfx::InitInfo initInfos;
     initInfos.platformData = pd;
-    initInfos.extensionCount = extensionCount;
-    initInfos.extensionNames = glfwExtensions;
+    //initInfos.extensionCount = extensionCount;
+    initInfos.extensionNames = extensions;
     initInfos.resolution = { WIDTH, HEIGHT };
 
     ctx.init(initInfos);

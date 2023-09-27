@@ -80,6 +80,7 @@ namespace jgfx::vk {
     void shutdown() override;
     bool pickPhysicalDevice(VkSurfaceKHR surface, const std::vector<const char*>& deviceExtensions);
     bool createLogicalDevice(VkSurfaceKHR surface, const std::vector<const char*>& deviceExtensions);
+    VkResult createDebugUtilsMessengerEXT(const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator);
 
     void newPipeline(PipelineHandle handle, ShaderHandle vertex, ShaderHandle fragment, PassHandle pass);
     void newPass(PassHandle handle);
@@ -91,9 +92,10 @@ namespace jgfx::vk {
     void draw(uint32_t firstVertex, uint32_t vertexCount);
     void endPass();
     void commitFrame();
-
+    
   private:
     VkInstance _instance;
+    VkDebugUtilsMessengerEXT _debugMessenger;
     VkPhysicalDevice _physicalDevice = VK_NULL_HANDLE;
     VkDevice _device;
     VkQueue _graphicsQueue; // queue supporting draw operations
