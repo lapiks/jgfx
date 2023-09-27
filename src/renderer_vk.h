@@ -87,16 +87,19 @@ namespace jgfx::vk {
   };
 
   struct RenderContextVK : public RenderContext {
+    // Initialization
     bool init(const InitInfo& createInfo) override;
     void shutdown() override;
     bool pickPhysicalDevice(VkSurfaceKHR surface, const std::vector<const char*>& deviceExtensions);
     bool createLogicalDevice(VkSurfaceKHR surface, const std::vector<const char*>& deviceExtensions);
     VkResult createDebugUtilsMessengerEXT(const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator);
 
+    // ObjectVK creation
     void newPipeline(PipelineHandle handle, ShaderHandle vertex, ShaderHandle fragment, PassHandle pass);
     void newPass(PassHandle handle);
     void newShader(ShaderHandle handle, const std::vector<char>& bytecode) override;
 
+    // cmds
     void beginDefaultPass();
     void beginPass(PassHandle pass);
     void applyPipeline(PipelineHandle pipe);
