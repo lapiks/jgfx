@@ -67,7 +67,7 @@ namespace jgfx::vk {
     void begin();
     void end();
     bool createCommandPool(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
-    bool createCommandBuffer(VkDevice device);
+    bool createCommandBuffers(VkDevice device);
     bool createSyncObjects(VkDevice device);
     void destroy(VkDevice device);
     void beginPass(VkRenderPass pass, VkFramebuffer framebuffer, const VkExtent2D& extent);
@@ -75,13 +75,15 @@ namespace jgfx::vk {
     void applyPipeline(VkPipeline pipeline, const VkExtent2D& extent);
     void draw(uint32_t firstVertex, uint32_t vertexCount);
     void submit();
+    void newFrame(VkDevice device);
     void setWaitSemaphore(VkSemaphore waitSemaphore);
     VkCommandPool _commandPool;
-    VkCommandBuffer _commandBuffer;
-    VkFence _inFlightFence; // wait for frame ending to start a new one
+    VkCommandBuffer _commandBuffers[MAX_FRAMES_IN_FLIGHT];
+    VkFence _inFlightFences[MAX_FRAMES_IN_FLIGHT]; // wait for frame ending to start a new one
     VkQueue _graphicsQueue; // queue supporting draw operations
-    VkSemaphore _renderFinishedSemaphore; // signal that rendering has finished and presentation can happen
+    VkSemaphore _renderFinishedSemaphores[MAX_FRAMES_IN_FLIGHT]; // signal that rendering has finished and presentation can happen
     VkSemaphore _waitSemaphore;
+    uint32_t _currentFrame = 0;
   };
 
   struct RenderContextVK : public RenderContext {

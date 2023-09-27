@@ -100,7 +100,7 @@ namespace jgfx::vk {
     if (!_cmdQueue.createCommandPool(_device, _physicalDevice, _swapChain._surface))
       return false;
 
-    if (!_cmdQueue.createCommandBuffer(_device))
+    if (!_cmdQueue.createCommandBuffers(_device))
       return false;
 
     if (!_cmdQueue.createSyncObjects(_device))
@@ -286,17 +286,16 @@ namespace jgfx::vk {
   void RenderContextVK::commitFrame() {
     _cmdQueue.end();
     
+    // submit cmds
     _cmdQueue.setWaitSemaphore(_swapChain._imageAvailableSemaphore);
     _cmdQueue.submit();
 
-    _swapChain.setWaitSemaphore(_cmdQueue._renderFinishedSemaphore);
+    // present image
+    _swapChain.setWaitSemaphore(_cmdQueue._renderFinishedSemaphores[_cmdQueue._currentFrame]);
     _swapChain.present();
 
-    // wait to start a new frame
-    vkWaitForFences(_device, 1, &_cmdQueue._inFlightFence, VK_TRUE, UINT64_MAX);
-    vkResetFences(_device, 1, &_cmdQueue._inFlightFence);
-
-    // start a new frame
+    // starts a new frame
+    _cmdQueue.newFrame(_device);
     _swapChain.acquire(_device);
 
     _cmdQueue.begin();
@@ -705,8 +704,10 @@ namespace jgfx::vk {
   }
 
   void CommandQueueVK::destroy(VkDevice device) {
-    vkDestroySemaphore(device, _renderFinishedSemaphore, nullptr);
-    vkDestroyFence(device, _inFlightFence, nullptr);
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+      vkDestroySemaphore(device, _renderFinishedSemaphores[i], nullptr);
+      vkDestroyFence(device, _inFlightFences[i], nullptr);
+    }
     vkDestroyCommandPool(device, _commandPool, nullptr);
   }
 
@@ -725,14 +726,14 @@ namespace jgfx::vk {
     return true;
   }
 
-  bool CommandQueueVK::createCommandBuffer(VkDevice device) {
+  bool CommandQueueVK::createCommandBuffers(VkDevice device) {
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.commandPool = _commandPool;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandBufferCount = 1;
+    allocInfo.commandBufferCount = MAX_FRAMES_IN_FLIGHT;
 
-    if (vkAllocateCommandBuffers(device, &allocInfo, &_commandBuffer) != VK_SUCCESS) {
+    if (vkAllocateCommandBuffers(device, &allocInfo, _commandBuffers) != VK_SUCCESS) {
       return false;
     }
 
@@ -746,27 +747,29 @@ namespace jgfx::vk {
     VkSemaphoreCreateInfo semaphoreInfo{};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-    if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &_renderFinishedSemaphore) != VK_SUCCESS ||
-        vkCreateFence(device, &fenceInfo, nullptr, &_inFlightFence) != VK_SUCCESS) {
-      return false;
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+      if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &_renderFinishedSemaphores[i]) != VK_SUCCESS ||
+        vkCreateFence(device, &fenceInfo, nullptr, &_inFlightFences[i]) != VK_SUCCESS) {
+        return false;
+      }
     }
 
     return true;
   }
 
   void CommandQueueVK::begin() {
-    vkResetCommandBuffer(_commandBuffer, /*VkCommandBufferResetFlagBits*/ 0);
+    vkResetCommandBuffer(_commandBuffers[_currentFrame], /*VkCommandBufferResetFlagBits*/ 0);
 
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-    if (vkBeginCommandBuffer(_commandBuffer, &beginInfo) != VK_SUCCESS) {
+    if (vkBeginCommandBuffer(_commandBuffers[_currentFrame], &beginInfo) != VK_SUCCESS) {
       return; // todo error handling
     }
   }
 
   void CommandQueueVK::end() {
-    if (vkEndCommandBuffer(_commandBuffer) != VK_SUCCESS) {
+    if (vkEndCommandBuffer(_commandBuffers[_currentFrame]) != VK_SUCCESS) {
       return; // todo error handling
     }
   }
@@ -783,15 +786,15 @@ namespace jgfx::vk {
     renderPassInfo.clearValueCount = 1;
     renderPassInfo.pClearValues = &clearColor;
 
-    vkCmdBeginRenderPass(_commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(_commandBuffers[_currentFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
   }
 
   void CommandQueueVK::endPass() {
-    vkCmdEndRenderPass(_commandBuffer);
+    vkCmdEndRenderPass(_commandBuffers[_currentFrame]);
   }
 
   void CommandQueueVK::applyPipeline(VkPipeline pipeline, const VkExtent2D& extent) {
-    vkCmdBindPipeline(_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+    vkCmdBindPipeline(_commandBuffers[_currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
     VkViewport viewport{};
     viewport.x = 0.0f;
@@ -800,16 +803,16 @@ namespace jgfx::vk {
     viewport.height = static_cast<float>(extent.height);
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
-    vkCmdSetViewport(_commandBuffer, 0, 1, &viewport);
+    vkCmdSetViewport(_commandBuffers[_currentFrame], 0, 1, &viewport);
 
     VkRect2D scissor{};
     scissor.offset = { 0, 0 };
     scissor.extent = extent;
-    vkCmdSetScissor(_commandBuffer, 0, 1, &scissor);
+    vkCmdSetScissor(_commandBuffers[_currentFrame], 0, 1, &scissor);
   }
 
   void CommandQueueVK::draw(uint32_t firstVertex, uint32_t vertexCount) {
-    vkCmdDraw(_commandBuffer, vertexCount, 1, firstVertex, 0);
+    vkCmdDraw(_commandBuffers[_currentFrame], vertexCount, 1, firstVertex, 0);
   }
 
   void CommandQueueVK::submit() {
@@ -823,17 +826,25 @@ namespace jgfx::vk {
     submitInfo.pWaitSemaphores = waitSemaphores;
     submitInfo.pWaitDstStageMask = waitStages;
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &_commandBuffer;
+    submitInfo.pCommandBuffers = &_commandBuffers[_currentFrame];
 
     // signal on renderFinished semaphore
-    VkSemaphore signalSemaphores[] = { _renderFinishedSemaphore };
+    VkSemaphore signalSemaphores[] = { _renderFinishedSemaphores[_currentFrame] };
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
     // will signal inFlightFence when the command queue will finish execution
-    if (vkQueueSubmit(_graphicsQueue, 1, &submitInfo, _inFlightFence) != VK_SUCCESS) {
+    if (vkQueueSubmit(_graphicsQueue, 1, &submitInfo, _inFlightFences[_currentFrame]) != VK_SUCCESS) {
       return; // todo error handling
     }
+  }
+
+  void CommandQueueVK::newFrame(VkDevice device) {
+    // wait to start a new frame
+    vkWaitForFences(device, 1, &_inFlightFences[_currentFrame], VK_TRUE, UINT64_MAX);
+    vkResetFences(device, 1, &_inFlightFences[_currentFrame]);
+
+    _currentFrame = (_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
   }
 
   void CommandQueueVK::setWaitSemaphore(VkSemaphore waitSemaphore) {
