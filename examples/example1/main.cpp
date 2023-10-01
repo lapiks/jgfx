@@ -53,6 +53,20 @@ public:
 
     ctx.init(initInfos);
 
+    const float vertices[] = {
+      0.0f, -0.5f, 1.0f, 0.0f, 0.0f,
+      0.5f, 0.5f, 0.0f, 1.0f, 0.0f,
+      -0.5f, 0.5f, 0.0f, 0.0f, 1.0f
+    };
+
+    jgfx::VertexAttributes attr;
+    attr.begin();
+    attr.add(0, jgfx::FLOAT2);
+    attr.add(1, jgfx::FLOAT3);
+    attr.end();
+
+    jgfx::BufferHandle vb = ctx.newBuffer(vertices, sizeof(vertices));
+
     std::vector<char> vertBin = utils::readFile("../shaders/vert.spv");
     std::vector<char> fragBin = utils::readFile("../shaders/frag.spv");
 
@@ -60,7 +74,9 @@ public:
     jgfx::ShaderHandle fs = ctx.newShader(fragBin);
 
     _pass = ctx.newPass();
-    _pipeline = ctx.newPipeline(vs, fs, _pass);
+    _pipeline = ctx.newPipeline(vs, fs, _pass, attr);
+
+    _bindings.vertexBuffers[0] = vb;
   }
 
   void draw() {
@@ -70,6 +86,7 @@ public:
       // render code
       ctx.beginDefaultPass();
       ctx.applyPipeline(_pipeline);
+      ctx.applyBindings(_bindings);
       ctx.draw(0, 3);
       ctx.endPass();
       ctx.commitFrame();
@@ -84,6 +101,7 @@ public:
 
   jgfx::PassHandle _pass;
   jgfx::PipelineHandle _pipeline;
+  jgfx::Bindings _bindings;
 
   GLFWwindow* window = nullptr;
   jgfx::Context ctx;

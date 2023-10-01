@@ -17,8 +17,8 @@ namespace jgfx
     ctx.reset(width, height);
   }
 
-  PipelineHandle Context::newPipeline(ShaderHandle vertex, ShaderHandle fragment, PassHandle pass) {
-    return ctx.newPipeline(vertex, fragment, pass);
+  PipelineHandle Context::newPipeline(ShaderHandle vertex, ShaderHandle fragment, PassHandle pass, VertexAttributes attr) {
+    return ctx.newPipeline(vertex, fragment, pass, attr);
   }
 
   PassHandle Context::newPass() {
@@ -27,6 +27,10 @@ namespace jgfx
 
   ShaderHandle Context::newShader(const std::vector<char>& binData) {
     return ctx.newShader(binData);
+  }
+
+  BufferHandle Context::newBuffer(const void* data, uint32_t size) {
+    return ctx.newBuffer(data, size);
   }
 
   void Context::beginDefaultPass() {
@@ -41,6 +45,10 @@ namespace jgfx
     ctx.applyPipeline(pipe);
   }
 
+  void Context::applyBindings(const Bindings& bindings) {
+    ctx.applyBindings(bindings);
+  }
+
   void Context::draw(uint32_t firstVertex, uint32_t vertexCount) {
     ctx.draw(firstVertex, vertexCount);
   }
@@ -53,5 +61,37 @@ namespace jgfx
     ctx.commitFrame();
   }
 
+  void VertexAttributes::begin() {
+    memset(_offsets, 0, sizeof(_offsets));
+    memset(_types, UNKNOWN, sizeof(_types));
+    _stride = 0;
+    _attrCount = 0;
+  }
+
+  uint32_t getSizeOf(AttribType type) {
+    switch (type) {
+    case UNKNOWN: return 0;
+    case FLOAT: return sizeof(float);
+    case FLOAT2: return 2 * sizeof(float);
+    case FLOAT3: return 3 * sizeof(float);
+    case FLOAT4: return 4 * sizeof(float);
+    }
+
+    return 0;
+  }
+
+  void VertexAttributes::add(uint32_t location, AttribType type) {
+    if (location >= MAX_VERTEX_ATTRIBUTES)
+      return; // todo error handling
+
+    _offsets[location] = _stride;
+    _types[location] = type;
+    _stride += getSizeOf(type);
+    _attrCount += 1;
+  }
+
+  void VertexAttributes::end() {
+
+  }
 }
 

@@ -13,7 +13,7 @@ namespace jgfx::vk {
     std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
 
     return VK_FALSE;
-}
+  }
 
   bool RenderContextVK::init(const InitInfo& initInfo) {
 #ifdef NDEBUG
@@ -133,6 +133,10 @@ namespace jgfx::vk {
     }
     _swapChain.destroy(_device);
     _swapChain.destroySurface(_instance);
+
+    for (int i = 0; i < MAX_BUFFERS; i++) {
+      _buffers[i].destroy(_device);
+  }
 #ifdef NDEBUG
     // nondebug
 #else
@@ -237,12 +241,22 @@ namespace jgfx::vk {
     );
   }
 
-  void RenderContextVK::newPipeline(PipelineHandle handle, ShaderHandle vertex, ShaderHandle fragment, PassHandle pass) {
+  void RenderContextVK::newBuffer(BufferHandle handle, const void* data, uint32_t size) {
+    _buffers[handle.id].create(
+      _device,
+      _physicalDevice,
+      data,
+      size
+    );
+  }
+
+  void RenderContextVK::newPipeline(PipelineHandle handle, ShaderHandle vertex, ShaderHandle fragment, PassHandle pass, VertexAttributes attr) {
     _pipelines[handle.id].create(
       _device, 
       _shaders[vertex.id], 
       _shaders[fragment.id],
-      _defaultPass
+      _defaultPass,
+      attr
       //_passes[pass.id]
     );
   }
@@ -308,6 +322,16 @@ namespace jgfx::vk {
     _swapChain.acquire(_device);
 
     _cmdQueue.begin();
+  }
+
+  void RenderContextVK::applyBindings(const Bindings& bindings) {
+    VkBuffer vertexBuffers[MAX_BUFFER_BIND];
+    for (int i = 0; i < MAX_BUFFER_BIND; i++) {
+      vertexBuffers[i] = _buffers[bindings.vertexBuffers[i].id]._buffer;
+    }
+    VkDeviceSize offsets[] = { 0 };
+
+    _cmdQueue.bindVertexBuffers(0, 1, vertexBuffers);
   }
 
   bool SwapChainVK::createSwapChain(VkDevice device, VkPhysicalDevice physicalDevice, const Resolution& resolution) {
@@ -524,7 +548,7 @@ namespace jgfx::vk {
     vkDestroyShaderModule(device, _module, nullptr);
   }
 
-  bool PipelineVK::create(VkDevice device, const ShaderVK& vertex, const ShaderVK& fragment, const PassVK& pass) {
+  bool PipelineVK::create(VkDevice device, const ShaderVK& vertex, const ShaderVK& fragment, const PassVK& pass, VertexAttributes attr) {
     // Shader stages:
     // Vertex shader def
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
@@ -542,13 +566,26 @@ namespace jgfx::vk {
 
     VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
+    VkVertexInputBindingDescription bindingDescription{};
+    bindingDescription.binding = 0;
+    bindingDescription.stride = attr._stride;
+    bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+    VkVertexInputAttributeDescription attrDescriptions[MAX_VERTEX_ATTRIBUTES];
+    for (int i = 0; i < attr._attrCount; i++) {
+      attrDescriptions[i].binding = 0;
+      attrDescriptions[i].location = i;
+      attrDescriptions[i].format = utils::toVkFormat(attr._types[i]);
+      attrDescriptions[i].offset = attr._offsets[i];
+    }
+
     // Vertex input def
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertexInputInfo.vertexBindingDescriptionCount = 0;
-    vertexInputInfo.pVertexBindingDescriptions = nullptr;
-    vertexInputInfo.vertexAttributeDescriptionCount = 0;
-    vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+    vertexInputInfo.vertexBindingDescriptionCount = 1;
+    vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+    vertexInputInfo.vertexAttributeDescriptionCount = attr._attrCount;
+    vertexInputInfo.pVertexAttributeDescriptions = attrDescriptions;
 
     // Primitive def
     VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
@@ -712,6 +749,61 @@ namespace jgfx::vk {
 
   void PassVK::destroy(VkDevice device) {
     vkDestroyRenderPass(device, _renderPass, nullptr);
+  }
+
+  bool BufferVK::create(VkDevice device, VkPhysicalDevice physicalDevice, const void* data, uint32_t size) {
+    VkBufferCreateInfo bufferInfo{};
+    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.size = size;
+    bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    if (vkCreateBuffer(device, &bufferInfo, nullptr, &_buffer) != VK_SUCCESS) 
+      return false;
+
+    VkMemoryRequirements memRequirements;
+    vkGetBufferMemoryRequirements(device, _buffer, &memRequirements);
+
+    auto findMemoryType = [](VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties) -> uint32_t {
+      VkPhysicalDeviceMemoryProperties memProperties;
+      vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+
+      for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+          return i;
+        }
+      }
+
+      return 0;
+    };
+
+    VkMemoryAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = memRequirements.size;
+    allocInfo.memoryTypeIndex = findMemoryType(
+      physicalDevice, 
+      memRequirements.memoryTypeBits, 
+      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+    );
+
+    // allocate memory on GPU
+    if (vkAllocateMemory(device, &allocInfo, nullptr, &_memory) != VK_SUCCESS) {
+      return false;
+    }
+
+    vkBindBufferMemory(device, _buffer, _memory, 0);
+
+    // map the buffer memory into CPU accessible memory
+    void* cpuData;
+    vkMapMemory(device, _memory, 0, bufferInfo.size, 0, &cpuData);
+    memcpy(cpuData, data, (size_t)bufferInfo.size);
+    vkUnmapMemory(device, _memory);
+
+    return true;
+  }
+
+  void BufferVK::destroy(VkDevice device) {
+    vkDestroyBuffer(device, _buffer, nullptr);
+    vkFreeMemory(device, _memory, nullptr);
   }
 
   bool FramebufferVK::create(VkDevice device, const VkImageView* attachments, VkExtent2D swapChainExtent, VkRenderPass renderPass) {
@@ -885,4 +977,8 @@ namespace jgfx::vk {
     _waitSemaphore = waitSemaphore;
   }
 
+  void CommandQueueVK::bindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* vertexBuffers) {
+    VkDeviceSize offsets[] = { 0 };
+    vkCmdBindVertexBuffers(_commandBuffers[_currentFrame], firstBinding, bindingCount, vertexBuffers, offsets);
+  }
 }

@@ -163,4 +163,17 @@ namespace jgfx::vk::utils {
 
     return indices.isComplete() && extensionsSupported && swapChainSupported;
   }
+
+  VkFormat toVkFormat(AttribType type) {
+    switch (type)
+    {
+    case jgfx::UNKNOWN: return VK_FORMAT_UNDEFINED;
+    case jgfx::FLOAT: return VK_FORMAT_R32_SFLOAT;
+    case jgfx::FLOAT2: return VK_FORMAT_R32G32_SFLOAT;
+    case jgfx::FLOAT3: return VK_FORMAT_R32G32B32_SFLOAT;
+    case jgfx::FLOAT4: return VK_FORMAT_R32G32B32A32_SFLOAT;
+    }
+    return VK_FORMAT_UNDEFINED;
+  }
+
 }

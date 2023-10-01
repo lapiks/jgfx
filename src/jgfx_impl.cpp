@@ -24,11 +24,11 @@ namespace jgfx {
     _reset = true;
   }
 
-  PipelineHandle ContextImpl::newPipeline(ShaderHandle vertex, ShaderHandle fragment, PassHandle pass) {
+  PipelineHandle ContextImpl::newPipeline(ShaderHandle vertex, ShaderHandle fragment, PassHandle pass, VertexAttributes attr) {
     PipelineHandle handle;
     pipelineHandleAlloc.allocate(handle);
 
-    vkCtx->newPipeline(handle, vertex, fragment, pass);
+    vkCtx->newPipeline(handle, vertex, fragment, pass, attr);
 
     return handle;
   }
@@ -51,6 +51,15 @@ namespace jgfx {
     return handle;
   }
 
+  BufferHandle ContextImpl::newBuffer(const void* data, uint32_t size) {
+    BufferHandle handle;
+    bufferHandleAlloc.allocate(handle);
+
+    vkCtx->newBuffer(handle, data, size);
+
+    return handle;
+  }
+
   void ContextImpl::beginDefaultPass() {
     vkCtx->beginDefaultPass();
   }
@@ -61,6 +70,10 @@ namespace jgfx {
 
   void ContextImpl::applyPipeline(PipelineHandle pipe) {
     vkCtx->applyPipeline(pipe);
+  }
+
+  void ContextImpl::applyBindings(const Bindings& bindings) {
+    vkCtx->applyBindings(bindings);
   }
 
   void ContextImpl::draw(uint32_t firstVertex, uint32_t vertexCount) {
