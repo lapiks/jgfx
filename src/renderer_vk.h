@@ -27,7 +27,9 @@ namespace jgfx::vk {
     bool createSurface(VkInstance instance, const PlatformData& platformData);
     bool createImageViews(VkDevice device);
     bool createFramebuffers(VkDevice device, VkRenderPass renderPass);
-    void destroy(VkDevice device, VkInstance instance);
+    void destroy(VkDevice device);
+    void destroySurface(VkInstance instance);
+    void update(VkDevice device, VkPhysicalDevice physicalDevice, VkRenderPass renderPass);
     void acquire(VkDevice device);
     void present();
     void setWaitSemaphore(VkSemaphore waitSemaphore);
@@ -42,6 +44,8 @@ namespace jgfx::vk {
     std::vector<VkImageView> _imageViews;
     std::vector<FramebufferVK> _framebuffers;
     uint32_t _currentImageIdx;
+    Resolution _resolution;
+    bool _needRecreation = false;
   };
 
   struct ShaderVK {
@@ -93,6 +97,7 @@ namespace jgfx::vk {
     bool pickPhysicalDevice(VkSurfaceKHR surface, const std::vector<const char*>& deviceExtensions);
     bool createLogicalDevice(VkSurfaceKHR surface, const std::vector<const char*>& deviceExtensions);
     VkResult createDebugUtilsMessengerEXT(const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator);
+    void updateResolution(const Resolution& resolution);
 
     // ObjectVK creation
     void newPipeline(PipelineHandle handle, ShaderHandle vertex, ShaderHandle fragment, PassHandle pass);

@@ -13,6 +13,10 @@ namespace jgfx
     ctx.shutdown();
   }
 
+  void Context::reset(uint32_t width, uint32_t height) {
+    ctx.reset(width, height);
+  }
+
   PipelineHandle Context::newPipeline(ShaderHandle vertex, ShaderHandle fragment, PassHandle pass) {
     return ctx.newPipeline(vertex, fragment, pass);
   }

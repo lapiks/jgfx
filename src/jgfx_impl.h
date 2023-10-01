@@ -12,6 +12,7 @@ namespace jgfx {
   struct ContextImpl {
     bool init(const InitInfo& initInfo);
     void shutdown();
+    void reset(uint32_t width, uint32_t height);
 
     PipelineHandle newPipeline(ShaderHandle vertex, ShaderHandle fragment, PassHandle pass);
     PassHandle newPass();
@@ -26,6 +27,9 @@ namespace jgfx {
 
   private:
     std::unique_ptr<vk::RenderContextVK> vkCtx;
+
+    InitInfo _initInfo;
+    bool _reset = false;
 
     HandleAllocator<PipelineHandle> pipelineHandleAlloc;
     HandleAllocator<PassHandle> passHandleAlloc;

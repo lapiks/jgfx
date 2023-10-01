@@ -18,16 +18,24 @@
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
-GLFWwindow* initWindow() {
-  glfwInit();
-
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-  return glfwCreateWindow(WIDTH, HEIGHT, "jgfx", nullptr, nullptr);
-}
-
 class App {
 public:
+  static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+    auto app = reinterpret_cast<App*>(glfwGetWindowUserPointer(window));
+    app->ctx.reset(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+  }
+
+  GLFWwindow* initWindow() {
+    glfwInit();
+
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "jgfx", nullptr, nullptr);
+    glfwSetWindowUserPointer(window, this);
+    glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+    return window;
+  }
+
   void init() {
     window = initWindow();
 
@@ -82,7 +90,6 @@ public:
   jgfx::PassHandle _pass;
   jgfx::PipelineHandle _pipeline;
 
-private:
   GLFWwindow* window = nullptr;
   jgfx::Context ctx;
 };

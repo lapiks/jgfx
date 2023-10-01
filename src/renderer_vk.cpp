@@ -131,7 +131,8 @@ namespace jgfx::vk {
     for (int i = 0; i < MAX_SHADERS; i++) {
       _shaders[i].destroy(_device);
     }
-    _swapChain.destroy(_device, _instance);
+    _swapChain.destroy(_device);
+    _swapChain.destroySurface(_instance);
 #ifdef NDEBUG
     // nondebug
 #else
@@ -224,6 +225,11 @@ namespace jgfx::vk {
     }
   }
 
+  void RenderContextVK::updateResolution(const Resolution& resolution) {
+    _swapChain._needRecreation = true;
+    _swapChain._resolution = resolution;
+  }
+
   void RenderContextVK::newShader(ShaderHandle handle, const std::vector<char>& bytecode) {
     _shaders[handle.id].create(
       _device, 
@@ -241,8 +247,7 @@ namespace jgfx::vk {
     );
   }
 
-  void RenderContextVK::newPass(PassHandle handle)
-  {
+  void RenderContextVK::newPass(PassHandle handle) {
     _passes[handle.id].create(
       _device,
       _swapChain._imageFormat
@@ -285,7 +290,7 @@ namespace jgfx::vk {
 
   void RenderContextVK::commitFrame() {
     _cmdQueue.end();
-    
+
     // submit cmds
     _cmdQueue.setWaitSemaphore(_swapChain._imageAvailableSemaphore);
     _cmdQueue.submit();
@@ -296,6 +301,10 @@ namespace jgfx::vk {
 
     // starts a new frame
     _cmdQueue.newFrame(_device);
+
+    if (_swapChain._needRecreation)
+      _swapChain.update(_device, _physicalDevice, _defaultPass._renderPass);
+
     _swapChain.acquire(_device);
 
     _cmdQueue.begin();
@@ -435,7 +444,7 @@ namespace jgfx::vk {
     return true;
   }
 
-  void SwapChainVK::destroy(VkDevice device, VkInstance instance) {
+  void SwapChainVK::destroy(VkDevice device) {
     vkDestroySemaphore(device, _imageAvailableSemaphore, nullptr);
     for (auto framebuffer : _framebuffers) {
       framebuffer.destroy(device);
@@ -444,11 +453,29 @@ namespace jgfx::vk {
       vkDestroyImageView(device, imageView, nullptr);
     }
     vkDestroySwapchainKHR(device, _swapChain, nullptr);
+  }
+
+  void SwapChainVK::destroySurface(VkInstance instance) {
     vkDestroySurfaceKHR(instance, _surface, nullptr);
   }
 
+  void SwapChainVK::update(VkDevice device, VkPhysicalDevice physicalDevice, VkRenderPass renderPass) {
+    destroy(device);
+    createSwapChain(device, physicalDevice, _resolution);
+    createImageViews(device);
+    createFramebuffers(device, renderPass);
+
+    _needRecreation = false;
+  }
+
   void SwapChainVK::acquire(VkDevice device) {
-    vkAcquireNextImageKHR(device, _swapChain, UINT64_MAX, _imageAvailableSemaphore, VK_NULL_HANDLE, &_currentImageIdx);
+    VkResult result = vkAcquireNextImageKHR(device, _swapChain, UINT64_MAX, _imageAvailableSemaphore, VK_NULL_HANDLE, &_currentImageIdx);
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+      _needRecreation = true;
+    }
+    else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+      return; // todo error handling
+    }
   }
 
   void SwapChainVK::present() {
@@ -464,7 +491,14 @@ namespace jgfx::vk {
     presentInfo.pImageIndices = &_currentImageIdx;
 
     // submit request to present image to the swap chain
-    vkQueuePresentKHR(_presentQueue, &presentInfo);
+    VkResult result = vkQueuePresentKHR(_presentQueue, &presentInfo);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+      _needRecreation = true;
+    }
+    else if (result != VK_SUCCESS) {
+      return; // todo error handling;
+    }
   }
 
   void SwapChainVK::setWaitSemaphore(VkSemaphore waitSemaphore) {

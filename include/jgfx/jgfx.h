@@ -41,6 +41,7 @@ namespace jgfx {
     // Initialization and shutdown
     bool init(const InitInfo& init);
     void shutdown();
+    void reset(uint32_t width, uint32_t height);
     // Object creation
     PipelineHandle newPipeline(ShaderHandle vertex, ShaderHandle fragment, PassHandle pass);
     PassHandle newPass();
