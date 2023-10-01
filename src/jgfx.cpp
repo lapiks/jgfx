@@ -29,8 +29,8 @@ namespace jgfx
     return ctx.newShader(binData);
   }
 
-  BufferHandle Context::newBuffer(const void* data, uint32_t size) {
-    return ctx.newBuffer(data, size);
+  BufferHandle Context::newBuffer(const void* data, uint32_t size, BufferType type) {
+    return ctx.newBuffer(data, size, type);
   }
 
   void Context::beginDefaultPass() {
@@ -51,6 +51,10 @@ namespace jgfx
 
   void Context::draw(uint32_t firstVertex, uint32_t vertexCount) {
     ctx.draw(firstVertex, vertexCount);
+  }
+
+  void Context::drawIndexed(uint32_t firstIndex, uint32_t indexCount) {
+    ctx.drawIndexed(firstIndex, indexCount);
   }
 
   void Context::endPass() {

@@ -35,6 +35,11 @@ namespace jgfx {
     FLOAT4,
   };
 
+  enum BufferType {
+    VERTEX_BUFFER,
+    INDEX_BUFFER,
+  };
+
   JGFX_HANDLE(ShaderHandle)
   JGFX_HANDLE(PipelineHandle)
   JGFX_HANDLE(PassHandle)
@@ -43,6 +48,7 @@ namespace jgfx {
 
   struct Bindings {
     BufferHandle vertexBuffers[MAX_BUFFER_BIND];
+    BufferHandle indexBuffer;
   };
 
   struct VertexAttributes {
@@ -65,13 +71,14 @@ namespace jgfx {
     PipelineHandle newPipeline(ShaderHandle vertex, ShaderHandle fragment, PassHandle pass, VertexAttributes attr);
     PassHandle newPass();
     ShaderHandle newShader(const std::vector<char>& binData);
-    BufferHandle newBuffer(const void* data, uint32_t size);
+    BufferHandle newBuffer(const void* data, uint32_t size, BufferType type);
     // Drawing
     void beginDefaultPass();
     void beginPass(PassHandle pass);
     void applyPipeline(PipelineHandle pipe);
     void applyBindings(const Bindings& bindings);
     void draw(uint32_t firstVertex, uint32_t vertexCount);
+    void drawIndexed(uint32_t firstIndex, uint32_t indexCount);
     void endPass();
     void commitFrame();
   };

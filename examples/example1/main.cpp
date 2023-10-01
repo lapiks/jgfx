@@ -54,9 +54,14 @@ public:
     ctx.init(initInfos);
 
     const float vertices[] = {
-      0.0f, -0.5f, 1.0f, 0.0f, 0.0f,
-      0.5f, 0.5f, 0.0f, 1.0f, 0.0f,
-      -0.5f, 0.5f, 0.0f, 0.0f, 1.0f
+      -0.5f, -0.5f, 1.0f, 0.0f, 0.0f,
+      0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
+      0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
+      -0.5f, 0.5f, 1.0f, 1.0f, 1.0f
+    };
+
+    const uint16_t indices[] = {
+      0, 1, 2, 2, 3, 0
     };
 
     jgfx::VertexAttributes attr;
@@ -65,7 +70,8 @@ public:
     attr.add(1, jgfx::FLOAT3);
     attr.end();
 
-    jgfx::BufferHandle vb = ctx.newBuffer(vertices, sizeof(vertices));
+    jgfx::BufferHandle vb = ctx.newBuffer(vertices, sizeof(vertices), jgfx::VERTEX_BUFFER);
+    jgfx::BufferHandle ib = ctx.newBuffer(indices, sizeof(indices), jgfx::INDEX_BUFFER);
 
     std::vector<char> vertBin = utils::readFile("../shaders/vert.spv");
     std::vector<char> fragBin = utils::readFile("../shaders/frag.spv");
@@ -77,6 +83,7 @@ public:
     _pipeline = ctx.newPipeline(vs, fs, _pass, attr);
 
     _bindings.vertexBuffers[0] = vb;
+    _bindings.indexBuffer = ib;
   }
 
   void draw() {
@@ -87,7 +94,7 @@ public:
       ctx.beginDefaultPass();
       ctx.applyPipeline(_pipeline);
       ctx.applyBindings(_bindings);
-      ctx.draw(0, 3);
+      ctx.drawIndexed(0, 6);
       ctx.endPass();
       ctx.commitFrame();
     }

@@ -69,10 +69,11 @@ namespace jgfx::vk {
   };
 
   struct BufferVK {
-    bool create(VkDevice device, VkPhysicalDevice physicalDevice, const void* data, uint32_t size);
+    bool create(VkDevice device, VkPhysicalDevice physicalDevice, const void* data, uint32_t size, BufferType type);
     void destroy(VkDevice device);
     VkBuffer _buffer = VK_NULL_HANDLE;
     VkDeviceMemory _memory = VK_NULL_HANDLE;
+    uint32_t _size = 0;
   };
 
   struct CommandQueueVK {
@@ -86,7 +87,9 @@ namespace jgfx::vk {
     void endPass();
     void applyPipeline(VkPipeline pipeline, const VkExtent2D& extent);
     void bindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* vertexBuffers);
+    void bindIndexBuffer(VkBuffer indexBuffe);
     void draw(uint32_t firstVertex, uint32_t vertexCount);
+    void drawIndexed(uint32_t firstIndex, uint32_t indexCount);
     void submit();
     void newFrame(VkDevice device);
     void setWaitSemaphore(VkSemaphore waitSemaphore);
@@ -112,7 +115,7 @@ namespace jgfx::vk {
     void newPipeline(PipelineHandle handle, ShaderHandle vertex, ShaderHandle fragment, PassHandle pass, VertexAttributes attr);
     void newPass(PassHandle handle);
     void newShader(ShaderHandle handle, const std::vector<char>& bytecode) override;
-    void newBuffer(BufferHandle handle, const void* data, uint32_t size);
+    void newBuffer(BufferHandle handle, const void* data, uint32_t size, BufferType type);
 
     // cmds
     void beginDefaultPass();
@@ -120,6 +123,7 @@ namespace jgfx::vk {
     void applyPipeline(PipelineHandle pipe);
     void applyBindings(const Bindings& bindings);
     void draw(uint32_t firstVertex, uint32_t vertexCount);
+    void drawIndexed(uint32_t firstIndex, uint32_t indexCount);
     void endPass();
     void commitFrame();
     

@@ -241,12 +241,13 @@ namespace jgfx::vk {
     );
   }
 
-  void RenderContextVK::newBuffer(BufferHandle handle, const void* data, uint32_t size) {
+  void RenderContextVK::newBuffer(BufferHandle handle, const void* data, uint32_t size, BufferType type) {
     _buffers[handle.id].create(
       _device,
       _physicalDevice,
       data,
-      size
+      size,
+      type
     );
   }
 
@@ -302,6 +303,10 @@ namespace jgfx::vk {
     _cmdQueue.draw(firstVertex, vertexCount);
   }
 
+  void RenderContextVK::drawIndexed(uint32_t firstIndex, uint32_t indexCount) {
+    _cmdQueue.drawIndexed(firstIndex, indexCount);
+  }
+
   void RenderContextVK::commitFrame() {
     _cmdQueue.end();
 
@@ -332,6 +337,7 @@ namespace jgfx::vk {
     VkDeviceSize offsets[] = { 0 };
 
     _cmdQueue.bindVertexBuffers(0, 1, vertexBuffers);
+    _cmdQueue.bindIndexBuffer(_buffers[bindings.indexBuffer.id]._buffer);
   }
 
   bool SwapChainVK::createSwapChain(VkDevice device, VkPhysicalDevice physicalDevice, const Resolution& resolution) {
@@ -751,11 +757,18 @@ namespace jgfx::vk {
     vkDestroyRenderPass(device, _renderPass, nullptr);
   }
 
-  bool BufferVK::create(VkDevice device, VkPhysicalDevice physicalDevice, const void* data, uint32_t size) {
+  bool BufferVK::create(VkDevice device, VkPhysicalDevice physicalDevice, const void* data, uint32_t size, BufferType type) {
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.size = size;
-    bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+
+    switch (type) {
+    case VERTEX_BUFFER: bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+      break;
+    case INDEX_BUFFER: bufferInfo.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+      break;
+    }
+    
     bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     if (vkCreateBuffer(device, &bufferInfo, nullptr, &_buffer) != VK_SUCCESS) 
       return false;
@@ -797,6 +810,8 @@ namespace jgfx::vk {
     vkMapMemory(device, _memory, 0, bufferInfo.size, 0, &cpuData);
     memcpy(cpuData, data, (size_t)bufferInfo.size);
     vkUnmapMemory(device, _memory);
+
+    _size = size;
 
     return true;
   }
@@ -941,6 +956,10 @@ namespace jgfx::vk {
     vkCmdDraw(_commandBuffers[_currentFrame], vertexCount, 1, firstVertex, 0);
   }
 
+  void CommandQueueVK::drawIndexed(uint32_t firstIndex, uint32_t indexCount) {
+    vkCmdDrawIndexed(_commandBuffers[_currentFrame], indexCount, 1, 0, firstIndex, 0);
+  }
+
   void CommandQueueVK::submit() {
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -980,5 +999,9 @@ namespace jgfx::vk {
   void CommandQueueVK::bindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* vertexBuffers) {
     VkDeviceSize offsets[] = { 0 };
     vkCmdBindVertexBuffers(_commandBuffers[_currentFrame], firstBinding, bindingCount, vertexBuffers, offsets);
+  }
+
+  void CommandQueueVK::bindIndexBuffer(VkBuffer indexBuffer) {
+    vkCmdBindIndexBuffer(_commandBuffers[_currentFrame], indexBuffer, 0, VK_INDEX_TYPE_UINT16);
   }
 }

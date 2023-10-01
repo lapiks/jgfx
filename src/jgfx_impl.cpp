@@ -51,11 +51,11 @@ namespace jgfx {
     return handle;
   }
 
-  BufferHandle ContextImpl::newBuffer(const void* data, uint32_t size) {
+  BufferHandle ContextImpl::newBuffer(const void* data, uint32_t size, BufferType type) {
     BufferHandle handle;
     bufferHandleAlloc.allocate(handle);
 
-    vkCtx->newBuffer(handle, data, size);
+    vkCtx->newBuffer(handle, data, size, type);
 
     return handle;
   }
@@ -78,6 +78,10 @@ namespace jgfx {
 
   void ContextImpl::draw(uint32_t firstVertex, uint32_t vertexCount) {
     vkCtx->draw(firstVertex, vertexCount);
+  }
+
+  void ContextImpl::drawIndexed(uint32_t firstIndex, uint32_t indexCount) {
+    vkCtx->drawIndexed(firstIndex, indexCount);
   }
 
   void ContextImpl::endPass() {

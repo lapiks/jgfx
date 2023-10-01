@@ -25,13 +25,14 @@ namespace jgfx {
     PipelineHandle newPipeline(ShaderHandle vertex, ShaderHandle fragment, PassHandle pass, VertexAttributes attr);
     PassHandle newPass();
     ShaderHandle newShader(const std::vector<char>& bytecode);
-    BufferHandle newBuffer(const void* data, uint32_t size);
+    BufferHandle newBuffer(const void* data, uint32_t size, BufferType type);
 
     void beginDefaultPass();
     void beginPass(PassHandle pass);
     void applyPipeline(PipelineHandle pipe);
     void applyBindings(const Bindings& bindings);
     void draw(uint32_t firstVertex, uint32_t vertexCount);
+    void drawIndexed(uint32_t firstIndex, uint32_t indexCount);
     void endPass();
     void commitFrame();
 
