@@ -38,6 +38,13 @@ namespace jgfx {
   enum BufferType {
     VERTEX_BUFFER,
     INDEX_BUFFER,
+    UNIFORM_BUFFER,
+  };
+  
+  enum ShaderStage {
+    VERTEX,
+    FRAGMENT,
+    ALL,
   };
 
   JGFX_HANDLE(ShaderHandle)
@@ -45,6 +52,7 @@ namespace jgfx {
   JGFX_HANDLE(PassHandle)
   JGFX_HANDLE(FramebufferHandle)
   JGFX_HANDLE(BufferHandle)
+  JGFX_HANDLE(UniformBufferHandle)
 
   struct Bindings {
     BufferHandle vertexBuffers[MAX_BUFFER_BIND];
@@ -77,6 +85,7 @@ namespace jgfx {
     void beginPass(PassHandle pass);
     void applyPipeline(PipelineHandle pipe);
     void applyBindings(const Bindings& bindings);
+    void applyUniforms(ShaderStage stage, const void* data, uint32_t size);
     void draw(uint32_t firstVertex, uint32_t vertexCount);
     void drawIndexed(uint32_t firstIndex, uint32_t indexCount);
     void endPass();

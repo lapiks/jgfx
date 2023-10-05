@@ -26,11 +26,13 @@ namespace jgfx {
     PassHandle newPass();
     ShaderHandle newShader(const std::vector<char>& bytecode);
     BufferHandle newBuffer(const void* data, uint32_t size, BufferType type);
+    UniformBufferHandle newUniformBuffer(uint32_t size);
 
     void beginDefaultPass();
     void beginPass(PassHandle pass);
     void applyPipeline(PipelineHandle pipe);
     void applyBindings(const Bindings& bindings);
+    void applyUniforms(ShaderStage stage, const void* data, uint32_t size);
     void draw(uint32_t firstVertex, uint32_t vertexCount);
     void drawIndexed(uint32_t firstIndex, uint32_t indexCount);
     void endPass();
@@ -47,5 +49,6 @@ namespace jgfx {
     HandleAllocator<ShaderHandle> shaderHandleAlloc;
     HandleAllocator<FramebufferHandle> framebufferHandleAlloc;
     HandleAllocator<BufferHandle> bufferHandleAlloc;
+    HandleAllocator<UniformBufferHandle> uniformBufferHandleAlloc;
   };
 }

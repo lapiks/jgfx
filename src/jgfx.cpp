@@ -49,6 +49,10 @@ namespace jgfx
     ctx.applyBindings(bindings);
   }
 
+  void Context::applyUniforms(ShaderStage stage, const void* data, uint32_t size) {
+    ctx.applyUniforms(stage, data, size);
+  }
+
   void Context::draw(uint32_t firstVertex, uint32_t vertexCount) {
     ctx.draw(firstVertex, vertexCount);
   }

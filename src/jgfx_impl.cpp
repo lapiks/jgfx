@@ -60,6 +60,15 @@ namespace jgfx {
     return handle;
   }
 
+  UniformBufferHandle ContextImpl::newUniformBuffer(uint32_t size) {
+    UniformBufferHandle handle;
+    uniformBufferHandleAlloc.allocate(handle);
+
+    vkCtx->newUniformBuffer(handle, size);
+
+    return handle;
+  }
+
   void ContextImpl::beginDefaultPass() {
     vkCtx->beginDefaultPass();
   }
@@ -74,6 +83,10 @@ namespace jgfx {
 
   void ContextImpl::applyBindings(const Bindings& bindings) {
     vkCtx->applyBindings(bindings);
+  }
+
+  void ContextImpl::applyUniforms(ShaderStage stage, const void* data, uint32_t size) {
+    vkCtx->applyUniforms(stage, data, size);
   }
 
   void ContextImpl::draw(uint32_t firstVertex, uint32_t vertexCount) {

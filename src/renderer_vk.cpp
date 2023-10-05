@@ -106,6 +106,12 @@ namespace jgfx::vk {
     if (!_cmdQueue.createSyncObjects(_device))
       return false;
 
+    if (!createDescriptorPool())
+      return false;
+
+    // TODO: to move
+    _uniformBuffers[0].create(_device, _physicalDevice, 1 << 20);
+
     _swapChain.acquire(_device);
 
     _cmdQueue.begin();
@@ -118,6 +124,8 @@ namespace jgfx::vk {
     vkDeviceWaitIdle(_device);
 
     _cmdQueue.destroy(_device);
+
+    vkDestroyDescriptorPool(_device, _descriptorPool, nullptr);
     //for (int i = 0; i < MAX_FRAMEBUFFERS; i++) {
     //  _framebuffers[i].destroy(_device);
     //}
@@ -136,6 +144,9 @@ namespace jgfx::vk {
 
     for (int i = 0; i < MAX_BUFFERS; i++) {
       _buffers[i].destroy(_device);
+    }
+    for (int i = 0; i < MAX_BUFFERS; i++) {
+      _uniformBuffers[i].destroy(_device);
   }
 #ifdef NDEBUG
     // nondebug
@@ -219,6 +230,25 @@ namespace jgfx::vk {
     return true;
   }
 
+  bool RenderContextVK::createDescriptorPool() {
+    VkDescriptorPoolSize poolSize{};
+    poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    poolSize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+
+    VkDescriptorPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.poolSizeCount = 1;
+    poolInfo.pPoolSizes = &poolSize;
+    poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+    poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+
+    if (vkCreateDescriptorPool(_device, &poolInfo, nullptr, &_descriptorPool) != VK_SUCCESS) {
+      return false;
+    }
+
+    return true;
+  }
+
   VkResult RenderContextVK::createDebugUtilsMessengerEXT(const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator) {
     auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(_instance, "vkCreateDebugUtilsMessengerEXT");
     if (func != nullptr) {
@@ -242,12 +272,28 @@ namespace jgfx::vk {
   }
 
   void RenderContextVK::newBuffer(BufferHandle handle, const void* data, uint32_t size, BufferType type) {
+    void* mappedMem;
+    // create the buffer and prepare mapped memory
     _buffers[handle.id].create(
       _device,
       _physicalDevice,
-      data,
       size,
-      type
+      type,
+      &mappedMem
+    );
+
+    // copy data in mapped memory
+    memcpy(mappedMem, data, (size_t)size);
+
+    // unmap memory
+    _buffers[handle.id].unmapMemory(_device);
+  }
+
+  void RenderContextVK::newUniformBuffer(UniformBufferHandle handle, uint32_t size) {
+    _uniformBuffers[handle.id].create(
+      _device,
+      _physicalDevice,
+      size
     );
   }
 
@@ -260,6 +306,9 @@ namespace jgfx::vk {
       attr
       //_passes[pass.id]
     );
+
+    _currentVertexShader = vertex;
+    _currentFragmentShader = fragment;
   }
 
   void RenderContextVK::newPass(PassHandle handle) {
@@ -293,6 +342,8 @@ namespace jgfx::vk {
       _pipelines[pipe.id]._graphicsPipeline,
       _swapChain._extent
     );
+
+    _currentPipeline = pipe;
   }
 
   void RenderContextVK::endPass() {
@@ -300,10 +351,20 @@ namespace jgfx::vk {
   }
 
   void RenderContextVK::draw(uint32_t firstVertex, uint32_t vertexCount) {
+    for (int i = 0; i < _currentUniformBufferId; i++) {
+      _uniformBuffers[_currentUniformBufferId].createDescriptorSets(_device, _descriptorPool, _shaders[_currentVertexShader.id]._descriptorSetLayout, _cmdQueue._currentFrame);
+      _cmdQueue.bindDescriptorSets(_pipelines[_currentPipeline.id]._pipelineLayout, _uniformBuffers[i]._descriptorSets);
+    }
+
     _cmdQueue.draw(firstVertex, vertexCount);
   }
 
   void RenderContextVK::drawIndexed(uint32_t firstIndex, uint32_t indexCount) {
+    for (int i = 0; i < _currentUniformBufferId; i++) {
+      _uniformBuffers[i].createDescriptorSets(_device, _descriptorPool, _shaders[_currentVertexShader.id]._descriptorSetLayout, _cmdQueue._currentFrame);
+      _cmdQueue.bindDescriptorSets(_pipelines[_currentPipeline.id]._pipelineLayout, _uniformBuffers[i]._descriptorSets);
+    }
+
     _cmdQueue.drawIndexed(firstIndex, indexCount);
   }
 
@@ -320,6 +381,12 @@ namespace jgfx::vk {
 
     // starts a new frame
     _cmdQueue.newFrame(_device);
+
+    for (int i = 0; i < _currentUniformBufferId; i++) {
+      vkFreeDescriptorSets(_device, _descriptorPool, 1, &_uniformBuffers[i]._descriptorSets[_cmdQueue._currentFrame]);
+    }
+
+    _currentUniformBufferId = 0;
 
     if (_swapChain._needRecreation)
       _swapChain.update(_device, _physicalDevice, _defaultPass._renderPass);
@@ -338,6 +405,11 @@ namespace jgfx::vk {
 
     _cmdQueue.bindVertexBuffers(0, 1, vertexBuffers);
     _cmdQueue.bindIndexBuffer(_buffers[bindings.indexBuffer.id]._buffer);
+  }
+
+  void RenderContextVK::applyUniforms(ShaderStage stage, const void* data, uint32_t size) {
+    _uniformBuffers[_currentUniformBufferId].update(data, size, _cmdQueue._currentFrame);
+    _currentUniformBufferId++;
   }
 
   bool SwapChainVK::createSwapChain(VkDevice device, VkPhysicalDevice physicalDevice, const Resolution& resolution) {
@@ -547,10 +619,31 @@ namespace jgfx::vk {
       return false;
     }
 
+    return createDescriptorSetLayout(device);
+  }
+
+  bool ShaderVK::createDescriptorSetLayout(VkDevice device) {
+    VkDescriptorSetLayoutBinding uboLayoutBinding{};
+    uboLayoutBinding.binding = 0;
+    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uboLayoutBinding.descriptorCount = 1;
+    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT; // TODO: to change with corresponding shader stage
+    uboLayoutBinding.pImmutableSamplers = nullptr; // Optional
+
+    VkDescriptorSetLayoutCreateInfo layoutInfo{};
+    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layoutInfo.bindingCount = 1;
+    layoutInfo.pBindings = &uboLayoutBinding;
+
+    if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &_descriptorSetLayout) != VK_SUCCESS) {
+      return false;
+    }
+
     return true;
   }
 
   void ShaderVK::destroy(VkDevice device) {
+    vkDestroyDescriptorSetLayout(device, _descriptorSetLayout, nullptr);
     vkDestroyShaderModule(device, _module, nullptr);
   }
 
@@ -624,7 +717,7 @@ namespace jgfx::vk {
     rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
     rasterizer.lineWidth = 1.0f;
     rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterizer.depthBiasEnable = VK_FALSE;
 
     // Multisampling def
@@ -662,8 +755,8 @@ namespace jgfx::vk {
     // Pipeline layout
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0; // Optional
-    pipelineLayoutInfo.pSetLayouts = nullptr; // Optional
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = &vertex._descriptorSetLayout;
     pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
     pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
@@ -757,7 +850,7 @@ namespace jgfx::vk {
     vkDestroyRenderPass(device, _renderPass, nullptr);
   }
 
-  bool BufferVK::create(VkDevice device, VkPhysicalDevice physicalDevice, const void* data, uint32_t size, BufferType type) {
+  bool BufferVK::create(VkDevice device, VkPhysicalDevice physicalDevice, uint32_t size, BufferType type, void** mappedMemory) {
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.size = size;
@@ -767,6 +860,7 @@ namespace jgfx::vk {
       break;
     case INDEX_BUFFER: bufferInfo.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
       break;
+    case UNIFORM_BUFFER: bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
     }
     
     bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -806,19 +900,74 @@ namespace jgfx::vk {
     vkBindBufferMemory(device, _buffer, _memory, 0);
 
     // map the buffer memory into CPU accessible memory
-    void* cpuData;
-    vkMapMemory(device, _memory, 0, bufferInfo.size, 0, &cpuData);
-    memcpy(cpuData, data, (size_t)bufferInfo.size);
-    vkUnmapMemory(device, _memory);
+    vkMapMemory(device, _memory, 0, bufferInfo.size, 0, mappedMemory);
 
     _size = size;
 
     return true;
   }
 
+  void BufferVK::unmapMemory(VkDevice device) {
+    vkUnmapMemory(device, _memory);
+  }
+
   void BufferVK::destroy(VkDevice device) {
     vkDestroyBuffer(device, _buffer, nullptr);
     vkFreeMemory(device, _memory, nullptr);
+  }
+
+  bool UniformBufferVK::create(VkDevice device, VkPhysicalDevice physicalDevice, uint32_t size) {
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+      if (!_buffers[i].create(device, physicalDevice, size, UNIFORM_BUFFER, &_mappedMemory[i]))
+        return false;
+    }
+
+    return true;
+  }
+
+  void UniformBufferVK::update(const void* data, uint32_t size, uint32_t currentFrame) {
+    // copy into mapped memory
+    memcpy(_mappedMemory[currentFrame], data, size);
+    _buffers[currentFrame]._size = size;
+  }
+
+  void UniformBufferVK::destroy(VkDevice device) {
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+      _buffers[i].destroy(device);
+    }
+  }
+
+  bool UniformBufferVK::createDescriptorSets(VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout, uint32_t currentFrame) {
+    std::vector<VkDescriptorSetLayout> layouts(1, descriptorSetLayout);
+    VkDescriptorSetAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = descriptorPool;
+    allocInfo.descriptorSetCount = 1;
+    allocInfo.pSetLayouts = layouts.data();
+
+    if (vkAllocateDescriptorSets(device, &allocInfo, &_descriptorSets[currentFrame]) != VK_SUCCESS) {
+      return false;
+    }
+
+    //for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+      VkDescriptorBufferInfo bufferInfo{};
+      bufferInfo.buffer = _buffers[currentFrame]._buffer;
+      bufferInfo.offset = 0;
+      bufferInfo.range = _buffers[currentFrame]._size;
+
+      VkWriteDescriptorSet descriptorWrite{};
+      descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+      descriptorWrite.dstSet = _descriptorSets[currentFrame];
+      descriptorWrite.dstBinding = 0;
+      descriptorWrite.dstArrayElement = 0;
+      descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+      descriptorWrite.descriptorCount = 1;
+      descriptorWrite.pBufferInfo = &bufferInfo;
+
+      vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
+    //}
+
+    return true;
   }
 
   bool FramebufferVK::create(VkDevice device, const VkImageView* attachments, VkExtent2D swapChainExtent, VkRenderPass renderPass) {
@@ -950,6 +1099,10 @@ namespace jgfx::vk {
     scissor.offset = { 0, 0 };
     scissor.extent = extent;
     vkCmdSetScissor(_commandBuffers[_currentFrame], 0, 1, &scissor);
+  }
+
+  void CommandQueueVK::bindDescriptorSets(VkPipelineLayout pipelineLayout, const VkDescriptorSet* descriptorSets) {
+    vkCmdBindDescriptorSets(_commandBuffers[_currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[_currentFrame], 0, nullptr);
   }
 
   void CommandQueueVK::draw(uint32_t firstVertex, uint32_t vertexCount) {

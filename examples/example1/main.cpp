@@ -4,7 +4,15 @@
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include "GLFW/glfw3native.h"
 
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <glm/vec4.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/gtx/transform.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 #include <iostream>
+#include <chrono>
 
 #include "jgfx/jgfx.h"
 
@@ -18,6 +26,9 @@ public:
   static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
     auto app = reinterpret_cast<App*>(glfwGetWindowUserPointer(window));
     app->ctx.reset(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+
+    app->_uniforms.proj = glm::perspective(glm::radians(45.0f), width / (float)height, 0.1f, 10.0f);
+    app->_uniforms.proj[1][1] *= -1;
   }
 
   GLFWwindow* initWindow() {
@@ -84,16 +95,27 @@ public:
 
     _bindings.vertexBuffers[0] = vb;
     _bindings.indexBuffer = ib;
+
+    _uniforms.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    _uniforms.proj = glm::perspective(glm::radians(45.0f), WIDTH / (float)HEIGHT, 0.1f, 10.0f);
+    _uniforms.proj[1][1] *= -1;
   }
 
   void draw() {
     while (!glfwWindowShouldClose(window)) {
       glfwPollEvents();
 
+      static auto startTime = std::chrono::high_resolution_clock::now();
+      auto currentTime = std::chrono::high_resolution_clock::now();
+      float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+      _uniforms.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
       // render code
       ctx.beginDefaultPass();
       ctx.applyPipeline(_pipeline);
       ctx.applyBindings(_bindings);
+      ctx.applyUniforms(jgfx::VERTEX, &_uniforms, sizeof(_uniforms));
       ctx.drawIndexed(0, 6);
       ctx.endPass();
       ctx.commitFrame();
@@ -106,9 +128,16 @@ public:
     glfwTerminate();
   }
 
+  struct Uniforms {
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 proj;
+  };
+
   jgfx::PassHandle _pass;
   jgfx::PipelineHandle _pipeline;
   jgfx::Bindings _bindings;
+  Uniforms _uniforms;
 
   GLFWwindow* window = nullptr;
   jgfx::Context ctx;

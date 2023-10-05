@@ -51,8 +51,11 @@ namespace jgfx::vk {
 
   struct ShaderVK {
     bool create(VkDevice device, const std::vector<char>& bytecode);
+    bool createDescriptorSetLayout(VkDevice device);
     void destroy(VkDevice device);
+    VkDescriptorSetLayout _descriptorSetLayout; // describes the kind of descriptors that can be bound
     VkShaderModule _module = VK_NULL_HANDLE;
+    VkDescriptorSetLayoutBinding binding;
   };
 
   struct PassVK {
@@ -69,11 +72,22 @@ namespace jgfx::vk {
   };
 
   struct BufferVK {
-    bool create(VkDevice device, VkPhysicalDevice physicalDevice, const void* data, uint32_t size, BufferType type);
+    bool create(VkDevice device, VkPhysicalDevice physicalDevice, uint32_t size, BufferType type, void** mappedMemory);
+    void unmapMemory(VkDevice device);
     void destroy(VkDevice device);
     VkBuffer _buffer = VK_NULL_HANDLE;
     VkDeviceMemory _memory = VK_NULL_HANDLE;
     uint32_t _size = 0;
+  };
+
+  struct UniformBufferVK {
+    bool create(VkDevice device, VkPhysicalDevice physicalDevice, uint32_t size);
+    void update(const void* data, uint32_t size, uint32_t currentFrame);
+    bool createDescriptorSets(VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout, uint32_t currentFram);
+    void destroy(VkDevice device);
+    BufferVK _buffers[MAX_FRAMES_IN_FLIGHT];
+    void* _mappedMemory[MAX_FRAMES_IN_FLIGHT];
+    VkDescriptorSet _descriptorSets[MAX_FRAMES_IN_FLIGHT];
   };
 
   struct CommandQueueVK {
@@ -88,6 +102,7 @@ namespace jgfx::vk {
     void applyPipeline(VkPipeline pipeline, const VkExtent2D& extent);
     void bindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* vertexBuffers);
     void bindIndexBuffer(VkBuffer indexBuffe);
+    void bindDescriptorSets(VkPipelineLayout pipelineLayout, const VkDescriptorSet* descriptorSets);
     void draw(uint32_t firstVertex, uint32_t vertexCount);
     void drawIndexed(uint32_t firstIndex, uint32_t indexCount);
     void submit();
@@ -108,6 +123,7 @@ namespace jgfx::vk {
     void shutdown() override;
     bool pickPhysicalDevice(VkSurfaceKHR surface, const std::vector<const char*>& deviceExtensions);
     bool createLogicalDevice(VkSurfaceKHR surface, const std::vector<const char*>& deviceExtensions);
+    bool createDescriptorPool();
     VkResult createDebugUtilsMessengerEXT(const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator);
     void updateResolution(const Resolution& resolution);
 
@@ -116,12 +132,14 @@ namespace jgfx::vk {
     void newPass(PassHandle handle);
     void newShader(ShaderHandle handle, const std::vector<char>& bytecode) override;
     void newBuffer(BufferHandle handle, const void* data, uint32_t size, BufferType type);
+    void newUniformBuffer(UniformBufferHandle handle, uint32_t size);
 
     // cmds
     void beginDefaultPass();
     void beginPass(PassHandle pass);
     void applyPipeline(PipelineHandle pipe);
     void applyBindings(const Bindings& bindings);
+    void applyUniforms(ShaderStage stage, const void* data, uint32_t size);
     void draw(uint32_t firstVertex, uint32_t vertexCount);
     void drawIndexed(uint32_t firstIndex, uint32_t indexCount);
     void endPass();
@@ -132,7 +150,13 @@ namespace jgfx::vk {
     VkDebugUtilsMessengerEXT _debugMessenger = VK_NULL_HANDLE;
     VkPhysicalDevice _physicalDevice = VK_NULL_HANDLE;
     VkDevice _device = VK_NULL_HANDLE;
+    VkDescriptorPool _descriptorPool = VK_NULL_HANDLE;
     
+    // TODO: pas fou
+    PipelineHandle _currentPipeline;
+    ShaderHandle _currentVertexShader;
+    ShaderHandle _currentFragmentShader;
+
     SwapChainVK _swapChain;
     CommandQueueVK _cmdQueue;
     PassVK _defaultPass;
@@ -140,5 +164,7 @@ namespace jgfx::vk {
     PipelineVK _pipelines[MAX_PIPELINES];
     PassVK _passes[MAX_PASSES];  
     BufferVK _buffers[MAX_BUFFERS];
+    UniformBufferVK _uniformBuffers[MAX_BUFFERS];
+    uint32_t _currentUniformBufferId;
   };
 }
