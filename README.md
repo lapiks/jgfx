@@ -1,2 +1,4 @@
 # jgfx
-A simple graphics API written in C++
+A simple graphics API agnostic rendering library written in C++
+
+WIP
