@@ -8,6 +8,7 @@ namespace jgfx {
   enum AttribType;
   enum CullMode;
   enum PrimitiveType;
+  enum FaceWinding;
 }
 
 namespace jgfx::vk::utils {
@@ -25,4 +26,5 @@ namespace jgfx::vk::utils {
   VkFormat toVkFormat(AttribType type);
   VkCullModeFlagBits toVkCullModeFlagBits(CullMode mode);
   VkPrimitiveTopology toVkPrimitiveTopology(PrimitiveType type);
+  VkFrontFace toVkFrontFace(FaceWinding faceWinding);
 }

@@ -198,4 +198,12 @@ namespace jgfx::vk::utils {
     return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
   }
 
+  VkFrontFace toVkFrontFace(FaceWinding faceWinding) {
+    switch (faceWinding) {
+    case CLOCKWISE: return VK_FRONT_FACE_CLOCKWISE;
+    case COUNTER_CLOCKWISE: return VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    }
+    return VK_FRONT_FACE_CLOCKWISE;
+  }
+
 }

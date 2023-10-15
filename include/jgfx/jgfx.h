@@ -62,6 +62,11 @@ namespace jgfx {
     TRIANGLE_FAN,
   };
 
+  enum FaceWinding {
+    CLOCKWISE,
+    COUNTER_CLOCKWISE,
+  };
+
   JGFX_HANDLE(ShaderHandle)
   JGFX_HANDLE(PipelineHandle)
   JGFX_HANDLE(PassHandle)
@@ -91,6 +96,7 @@ namespace jgfx {
     ShaderHandle fs;
     VertexAttributes vertexAttributes;
     CullMode cullMode = FRONT;
+    FaceWinding faceWinding = CLOCKWISE;
     PassHandle pass;
     PrimitiveType primitive = TRIANGLES;
   };
