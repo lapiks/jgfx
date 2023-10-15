@@ -23,7 +23,7 @@ namespace jgfx {
     void reset(uint32_t width, uint32_t height);
 
     PipelineHandle newPipeline(const PipelineDesc& pipelineDesc);
-    PassHandle newPass();
+    PassHandle newPass(const PassDesc& passDesc);
     ShaderHandle newShader(const void* binData, uint32_t size);
     BufferHandle newBuffer(const void* data, uint32_t size, BufferType type);
     UniformBufferHandle newUniformBuffer(uint32_t size);

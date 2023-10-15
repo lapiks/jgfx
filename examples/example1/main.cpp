@@ -122,7 +122,11 @@ public:
 
     jgfx::ImageHandle img = ctx.newImage();
 
-    _pass = ctx.newPass();
+    _pass = ctx.newPass(
+      jgfx::PassDesc{
+
+      }
+    );
 
     _pipeline = ctx.newPipeline(
       jgfx::PipelineDesc{

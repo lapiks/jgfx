@@ -85,6 +85,10 @@ namespace jgfx {
     PassHandle pass;
   };
 
+  struct PassDesc {
+
+  };
+
   struct Context {
     // Initialization and shutdown
     bool init(const InitInfo& init);
@@ -92,7 +96,7 @@ namespace jgfx {
     void reset(uint32_t width, uint32_t height);
     // Object creation
     PipelineHandle newPipeline(const PipelineDesc& pipelineDesc);
-    PassHandle newPass();
+    PassHandle newPass(const PassDesc& passDesc);
     ShaderHandle newShader(const void* binData, uint32_t size);
     BufferHandle newBuffer(const void* data, uint32_t size, BufferType type);
     ImageHandle newImage();

@@ -33,11 +33,11 @@ namespace jgfx {
     return handle;
   }
 
-  PassHandle ContextImpl::newPass() {
+  PassHandle ContextImpl::newPass(const PassDesc& passDesc) {
     PassHandle handle;
     passHandleAlloc.allocate(handle);
 
-    vkCtx->newPass(handle);
+    vkCtx->newPass(handle, passDesc);
 
     return handle;
   }

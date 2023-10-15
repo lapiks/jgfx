@@ -312,7 +312,7 @@ namespace jgfx::vk {
     _currentFragmentShader = pipelineDesc.fs;
   }
 
-  void RenderContextVK::newPass(PassHandle handle) {
+  void RenderContextVK::newPass(PassHandle handle, const PassDesc& passDesc) {
     _passes[handle.id].create(
       _device,
       _swapChain._imageFormat

@@ -21,8 +21,8 @@ namespace jgfx
     return ctx.newPipeline(pipelineDesc);
   }
 
-  PassHandle Context::newPass() {
-    return ctx.newPass();
+  PassHandle Context::newPass(const PassDesc& passDesc) {
+    return ctx.newPass(passDesc);
   }
 
   ShaderHandle Context::newShader(const void* binData, uint32_t size) {
