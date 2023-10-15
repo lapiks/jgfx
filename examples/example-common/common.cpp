@@ -2,6 +2,9 @@
 
 #include <fstream>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 namespace utils {
   std::vector<char> readFile(const std::string& filename) {
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
@@ -17,5 +20,9 @@ namespace utils {
     file.close();
 
     return buffer;
+  }
+
+  void readImage() {
+
   }
 }
