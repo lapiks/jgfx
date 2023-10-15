@@ -318,6 +318,10 @@ namespace jgfx::vk {
     );
   }
 
+  void RenderContextVK::newImage(ImageHandle handle) {
+
+  }
+
   void RenderContextVK::beginDefaultPass() {
     _cmdQueue.beginPass(
       _defaultPass._renderPass,

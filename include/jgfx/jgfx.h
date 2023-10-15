@@ -59,6 +59,7 @@ namespace jgfx {
   JGFX_HANDLE(FramebufferHandle)
   JGFX_HANDLE(BufferHandle)
   JGFX_HANDLE(UniformBufferHandle)
+  JGFX_HANDLE(ImageHandle)
 
   struct Bindings {
     BufferHandle vertexBuffers[MAX_BUFFER_BIND];
@@ -94,6 +95,7 @@ namespace jgfx {
     PassHandle newPass();
     ShaderHandle newShader(const std::vector<char>& binData);
     BufferHandle newBuffer(const void* data, uint32_t size, BufferType type);
+    ImageHandle newImage();
     // Drawing
     void beginDefaultPass();
     void beginPass(PassHandle pass);

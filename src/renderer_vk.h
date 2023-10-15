@@ -9,6 +9,7 @@ constexpr int MAX_PIPELINES = 512;
 constexpr int MAX_PASSES = 512;
 constexpr int MAX_FRAMEBUFFERS = 512;
 constexpr int MAX_BUFFERS = 4<<10;
+constexpr int MAX_IMAGES = 4<<10;
 constexpr int MAX_FRAMES_IN_FLIGHT = 3;
 
 namespace jgfx {
@@ -117,6 +118,10 @@ namespace jgfx::vk {
     uint32_t _currentFrame = 0;
   };
 
+  struct ImageVK {
+
+  };
+
   struct RenderContextVK : public RenderContext {
     // Initialization
     bool init(const InitInfo& createInfo) override;
@@ -133,6 +138,7 @@ namespace jgfx::vk {
     void newShader(ShaderHandle handle, const std::vector<char>& bytecode) override;
     void newBuffer(BufferHandle handle, const void* data, uint32_t size, BufferType type);
     void newUniformBuffer(UniformBufferHandle handle, uint32_t size);
+    void newImage(ImageHandle handle);
 
     // cmds
     void beginDefaultPass();
@@ -165,6 +171,7 @@ namespace jgfx::vk {
     PassVK _passes[MAX_PASSES];  
     BufferVK _buffers[MAX_BUFFERS];
     UniformBufferVK _uniformBuffers[MAX_BUFFERS];
+    ImageVK _images[MAX_IMAGES];
     uint32_t _currentUniformBufferId;
   };
 }

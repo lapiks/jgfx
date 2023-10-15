@@ -33,6 +33,10 @@ namespace jgfx
     return ctx.newBuffer(data, size, type);
   }
 
+  ImageHandle Context::newImage() {
+    return ctx.newImage();
+  }
+
   void Context::beginDefaultPass() {
     ctx.beginDefaultPass();
   }

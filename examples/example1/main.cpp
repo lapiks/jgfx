@@ -120,6 +120,8 @@ public:
     jgfx::ShaderHandle vs = ctx.newShader(vertBin);
     jgfx::ShaderHandle fs = ctx.newShader(fragBin);
 
+    jgfx::ImageHandle img = ctx.newImage();
+
     _pass = ctx.newPass();
 
     _pipeline = ctx.newPipeline(

@@ -69,6 +69,15 @@ namespace jgfx {
     return handle;
   }
 
+  ImageHandle ContextImpl::newImage() {
+    ImageHandle handle;
+    imageHandleAlloc.allocate(handle);
+
+    vkCtx->newImage(handle);
+
+    return handle;
+  }
+
   void ContextImpl::beginDefaultPass() {
     vkCtx->beginDefaultPass();
   }

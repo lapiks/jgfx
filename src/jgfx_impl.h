@@ -27,6 +27,7 @@ namespace jgfx {
     ShaderHandle newShader(const std::vector<char>& bytecode);
     BufferHandle newBuffer(const void* data, uint32_t size, BufferType type);
     UniformBufferHandle newUniformBuffer(uint32_t size);
+    ImageHandle newImage();
 
     void beginDefaultPass();
     void beginPass(PassHandle pass);
@@ -50,5 +51,6 @@ namespace jgfx {
     HandleAllocator<FramebufferHandle> framebufferHandleAlloc;
     HandleAllocator<BufferHandle> bufferHandleAlloc;
     HandleAllocator<UniformBufferHandle> uniformBufferHandleAlloc;
+    HandleAllocator<ImageHandle> imageHandleAlloc;
   };
 }
