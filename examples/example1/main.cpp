@@ -65,20 +65,50 @@ public:
     ctx.init(initInfos);
 
     const float vertices[] = {
-      -0.5f, -0.5f, 1.0f, 0.0f, 0.0f,
-      0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
-      0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
-      -0.5f, 0.5f, 1.0f, 1.0f, 1.0f
+        -1.0, -1.0, -1.0,   1.0, 0.0, 0.0, 1.0,
+         1.0, -1.0, -1.0,   1.0, 0.0, 0.0, 1.0,
+         1.0,  1.0, -1.0,   1.0, 0.0, 0.0, 1.0,
+        -1.0,  1.0, -1.0,   1.0, 0.0, 0.0, 1.0,
+
+        -1.0, -1.0,  1.0,   0.0, 1.0, 0.0, 1.0,
+         1.0, -1.0,  1.0,   0.0, 1.0, 0.0, 1.0,
+         1.0,  1.0,  1.0,   0.0, 1.0, 0.0, 1.0,
+        -1.0,  1.0,  1.0,   0.0, 1.0, 0.0, 1.0,
+
+        -1.0, -1.0, -1.0,   0.0, 0.0, 1.0, 1.0,
+        -1.0,  1.0, -1.0,   0.0, 0.0, 1.0, 1.0,
+        -1.0,  1.0,  1.0,   0.0, 0.0, 1.0, 1.0,
+        -1.0, -1.0,  1.0,   0.0, 0.0, 1.0, 1.0,
+
+        1.0, -1.0, -1.0,    1.0, 0.5, 0.0, 1.0,
+        1.0,  1.0, -1.0,    1.0, 0.5, 0.0, 1.0,
+        1.0,  1.0,  1.0,    1.0, 0.5, 0.0, 1.0,
+        1.0, -1.0,  1.0,    1.0, 0.5, 0.0, 1.0,
+
+        -1.0, -1.0, -1.0,   0.0, 0.5, 1.0, 1.0,
+        -1.0, -1.0,  1.0,   0.0, 0.5, 1.0, 1.0,
+         1.0, -1.0,  1.0,   0.0, 0.5, 1.0, 1.0,
+         1.0, -1.0, -1.0,   0.0, 0.5, 1.0, 1.0,
+
+        -1.0,  1.0, -1.0,   1.0, 0.0, 0.5, 1.0,
+        -1.0,  1.0,  1.0,   1.0, 0.0, 0.5, 1.0,
+         1.0,  1.0,  1.0,   1.0, 0.0, 0.5, 1.0,
+         1.0,  1.0, -1.0,   1.0, 0.0, 0.5, 1.0
     };
 
     const uint16_t indices[] = {
-      0, 1, 2, 2, 3, 0
+      0, 1, 2,  0, 2, 3,
+      6, 5, 4,  7, 6, 4,
+      8, 9, 10,  8, 10, 11,
+      14, 13, 12,  15, 14, 12,
+      16, 17, 18,  16, 18, 19,
+      22, 21, 20,  23, 22, 20
     };
 
     jgfx::VertexAttributes attr;
     attr.begin();
-    attr.add(0, jgfx::FLOAT2);
-    attr.add(1, jgfx::FLOAT3);
+    attr.add(0, jgfx::FLOAT3);
+    attr.add(1, jgfx::FLOAT4);
     attr.end();
 
     jgfx::BufferHandle vb = ctx.newBuffer(vertices, sizeof(vertices), jgfx::VERTEX_BUFFER);
@@ -96,7 +126,7 @@ public:
     _bindings.vertexBuffers[0] = vb;
     _bindings.indexBuffer = ib;
 
-    _uniforms.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    _uniforms.view = glm::lookAt(glm::vec3(4.0f, 4.0f, 4.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     _uniforms.proj = glm::perspective(glm::radians(45.0f), WIDTH / (float)HEIGHT, 0.1f, 10.0f);
     _uniforms.proj[1][1] *= -1;
   }
@@ -116,7 +146,7 @@ public:
       ctx.applyPipeline(_pipeline);
       ctx.applyBindings(_bindings);
       ctx.applyUniforms(jgfx::VERTEX, &_uniforms, sizeof(_uniforms));
-      ctx.drawIndexed(0, 6);
+      ctx.drawIndexed(0, 36);
       ctx.endPass();
       ctx.commitFrame();
     }
