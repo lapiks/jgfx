@@ -185,4 +185,17 @@ namespace jgfx::vk::utils {
     }
     return VK_CULL_MODE_NONE;
   }
+
+  VkPrimitiveTopology toVkPrimitiveTopology(PrimitiveType type) {
+    switch (type) {
+    case POINTS: return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+    case LINES: return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+    case LINE_STRIP: return VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
+    case TRIANGLES: return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    case TRIANGLE_STRIP: return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+    case TRIANGLE_FAN: return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
+    }
+    return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+  }
+
 }

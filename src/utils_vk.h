@@ -7,6 +7,7 @@ namespace jgfx {
   struct Resolution;
   enum AttribType;
   enum CullMode;
+  enum PrimitiveType;
 }
 
 namespace jgfx::vk::utils {
@@ -23,4 +24,5 @@ namespace jgfx::vk::utils {
   // toVk conversions
   VkFormat toVkFormat(AttribType type);
   VkCullModeFlagBits toVkCullModeFlagBits(CullMode mode);
+  VkPrimitiveTopology toVkPrimitiveTopology(PrimitiveType type);
 }

@@ -693,7 +693,7 @@ namespace jgfx::vk {
     // Primitive def
     VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
     inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    inputAssembly.topology = utils::toVkPrimitiveTopology(pipelineDesc.primitive);
     inputAssembly.primitiveRestartEnable = VK_FALSE;
 
     // Dynamic state for viewport and scissor

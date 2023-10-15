@@ -53,6 +53,15 @@ namespace jgfx {
     BACK,
   };
 
+  enum PrimitiveType {
+    POINTS,
+    LINES,
+    LINE_STRIP,
+    TRIANGLES,
+    TRIANGLE_STRIP,
+    TRIANGLE_FAN,
+  };
+
   JGFX_HANDLE(ShaderHandle)
   JGFX_HANDLE(PipelineHandle)
   JGFX_HANDLE(PassHandle)
@@ -81,8 +90,9 @@ namespace jgfx {
     ShaderHandle vs;
     ShaderHandle fs;
     VertexAttributes vertexAttributes;
-    CullMode cullMode;
+    CullMode cullMode = FRONT;
     PassHandle pass;
+    PrimitiveType primitive = TRIANGLES;
   };
 
   struct PassDesc {
