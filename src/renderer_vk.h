@@ -66,7 +66,7 @@ namespace jgfx::vk {
   };
 
   struct PipelineVK {
-    bool create(VkDevice device, const ShaderVK& vertex, const ShaderVK& fragment, const PassVK& pass, VertexAttributes attr);
+    bool create(VkDevice device, const ShaderVK& vertex, const ShaderVK& fragment, const PassVK& pass, const PipelineDesc& pipelineDesc);
     void destroy(VkDevice device);
     VkPipeline _graphicsPipeline = VK_NULL_HANDLE;
     VkPipelineLayout _pipelineLayout = VK_NULL_HANDLE;

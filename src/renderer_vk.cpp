@@ -303,9 +303,8 @@ namespace jgfx::vk {
       _device, 
       _shaders[pipelineDesc.vs.id], 
       _shaders[pipelineDesc.fs.id],
-      _defaultPass,
-      pipelineDesc.vertexAttributes
-      //_passes[pass.id]
+      _defaultPass,//_passes[pass.id]
+      pipelineDesc      
     );
 
     _currentVertexShader = pipelineDesc.vs;
@@ -652,7 +651,7 @@ namespace jgfx::vk {
     vkDestroyShaderModule(device, _module, nullptr);
   }
 
-  bool PipelineVK::create(VkDevice device, const ShaderVK& vertex, const ShaderVK& fragment, const PassVK& pass, VertexAttributes attr) {
+  bool PipelineVK::create(VkDevice device, const ShaderVK& vertex, const ShaderVK& fragment, const PassVK& pass, const PipelineDesc& pipelineDesc) {
     // Shader stages:
     // Vertex shader def
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
@@ -672,15 +671,15 @@ namespace jgfx::vk {
 
     VkVertexInputBindingDescription bindingDescription{};
     bindingDescription.binding = 0;
-    bindingDescription.stride = attr._stride;
+    bindingDescription.stride = pipelineDesc.vertexAttributes._stride;
     bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
     VkVertexInputAttributeDescription attrDescriptions[MAX_VERTEX_ATTRIBUTES];
-    for (int i = 0; i < attr._attrCount; i++) {
+    for (int i = 0; i < pipelineDesc.vertexAttributes._attrCount; i++) {
       attrDescriptions[i].binding = 0;
       attrDescriptions[i].location = i;
-      attrDescriptions[i].format = utils::toVkFormat(attr._types[i]);
-      attrDescriptions[i].offset = attr._offsets[i];
+      attrDescriptions[i].format = utils::toVkFormat(pipelineDesc.vertexAttributes._types[i]);
+      attrDescriptions[i].offset = pipelineDesc.vertexAttributes._offsets[i];
     }
 
     // Vertex input def
@@ -688,7 +687,7 @@ namespace jgfx::vk {
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputInfo.vertexBindingDescriptionCount = 1;
     vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-    vertexInputInfo.vertexAttributeDescriptionCount = attr._attrCount;
+    vertexInputInfo.vertexAttributeDescriptionCount = pipelineDesc.vertexAttributes._attrCount;
     vertexInputInfo.pVertexAttributeDescriptions = attrDescriptions;
 
     // Primitive def
@@ -721,7 +720,7 @@ namespace jgfx::vk {
     rasterizer.rasterizerDiscardEnable = VK_FALSE;
     rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
     rasterizer.lineWidth = 1.0f;
-    rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterizer.cullMode = utils::toVkCullModeFlagBits(pipelineDesc.cullMode);
     rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
     rasterizer.depthBiasEnable = VK_FALSE;
 

@@ -133,7 +133,7 @@ public:
         .vs = vs,
         .fs = fs,
         .vertexAttributes = attr,
-        .cullMode = jgfx::FRONT
+        .cullMode = jgfx::BACK
       }
     );
 

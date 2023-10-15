@@ -167,13 +167,22 @@ namespace jgfx::vk::utils {
   VkFormat toVkFormat(AttribType type) {
     switch (type)
     {
-    case jgfx::UNKNOWN: return VK_FORMAT_UNDEFINED;
-    case jgfx::FLOAT: return VK_FORMAT_R32_SFLOAT;
-    case jgfx::FLOAT2: return VK_FORMAT_R32G32_SFLOAT;
-    case jgfx::FLOAT3: return VK_FORMAT_R32G32B32_SFLOAT;
-    case jgfx::FLOAT4: return VK_FORMAT_R32G32B32A32_SFLOAT;
+    case UNKNOWN: return VK_FORMAT_UNDEFINED;
+    case FLOAT: return VK_FORMAT_R32_SFLOAT;
+    case FLOAT2: return VK_FORMAT_R32G32_SFLOAT;
+    case FLOAT3: return VK_FORMAT_R32G32B32_SFLOAT;
+    case FLOAT4: return VK_FORMAT_R32G32B32A32_SFLOAT;
     }
     return VK_FORMAT_UNDEFINED;
   }
 
+  VkCullModeFlagBits toVkCullModeFlagBits(CullMode mode) {
+    switch (mode)
+    {
+    case NONE: return VK_CULL_MODE_NONE;
+    case FRONT: return VK_CULL_MODE_FRONT_BIT;
+    case BACK: return VK_CULL_MODE_BACK_BIT;
+    }
+    return VK_CULL_MODE_NONE;
+  }
 }
