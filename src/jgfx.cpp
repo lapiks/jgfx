@@ -17,8 +17,8 @@ namespace jgfx
     ctx.reset(width, height);
   }
 
-  PipelineHandle Context::newPipeline(ShaderHandle vertex, ShaderHandle fragment, PassHandle pass, VertexAttributes attr) {
-    return ctx.newPipeline(vertex, fragment, pass, attr);
+  PipelineHandle Context::newPipeline(const PipelineDesc& pipelineDesc) {
+    return ctx.newPipeline(pipelineDesc);
   }
 
   PassHandle Context::newPass() {

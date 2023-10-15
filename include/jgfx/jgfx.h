@@ -47,6 +47,12 @@ namespace jgfx {
     ALL,
   };
 
+  enum CullMode {
+    NONE,
+    FRONT,
+    BACK,
+  };
+
   JGFX_HANDLE(ShaderHandle)
   JGFX_HANDLE(PipelineHandle)
   JGFX_HANDLE(PassHandle)
@@ -70,13 +76,21 @@ namespace jgfx {
     uint16_t _attrCount = 0;
   };
 
+  struct PipelineDesc {
+    ShaderHandle vs;
+    ShaderHandle fs;
+    VertexAttributes vertexAttributes;
+    CullMode cullMode;
+    PassHandle pass;
+  };
+
   struct Context {
     // Initialization and shutdown
     bool init(const InitInfo& init);
     void shutdown();
     void reset(uint32_t width, uint32_t height);
     // Object creation
-    PipelineHandle newPipeline(ShaderHandle vertex, ShaderHandle fragment, PassHandle pass, VertexAttributes attr);
+    PipelineHandle newPipeline(const PipelineDesc& pipelineDesc);
     PassHandle newPass();
     ShaderHandle newShader(const std::vector<char>& binData);
     BufferHandle newBuffer(const void* data, uint32_t size, BufferType type);

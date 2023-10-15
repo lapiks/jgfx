@@ -297,18 +297,18 @@ namespace jgfx::vk {
     );
   }
 
-  void RenderContextVK::newPipeline(PipelineHandle handle, ShaderHandle vertex, ShaderHandle fragment, PassHandle pass, VertexAttributes attr) {
+  void RenderContextVK::newPipeline(PipelineHandle handle, const PipelineDesc& pipelineDesc) {
     _pipelines[handle.id].create(
       _device, 
-      _shaders[vertex.id], 
-      _shaders[fragment.id],
+      _shaders[pipelineDesc.vs.id], 
+      _shaders[pipelineDesc.fs.id],
       _defaultPass,
-      attr
+      pipelineDesc.vertexAttributes
       //_passes[pass.id]
     );
 
-    _currentVertexShader = vertex;
-    _currentFragmentShader = fragment;
+    _currentVertexShader = pipelineDesc.vs;
+    _currentFragmentShader = pipelineDesc.fs;
   }
 
   void RenderContextVK::newPass(PassHandle handle) {

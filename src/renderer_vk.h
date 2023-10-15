@@ -128,7 +128,7 @@ namespace jgfx::vk {
     void updateResolution(const Resolution& resolution);
 
     // ObjectVK creation
-    void newPipeline(PipelineHandle handle, ShaderHandle vertex, ShaderHandle fragment, PassHandle pass, VertexAttributes attr);
+    void newPipeline(PipelineHandle handle, const PipelineDesc& pipelineDesc);
     void newPass(PassHandle handle);
     void newShader(ShaderHandle handle, const std::vector<char>& bytecode) override;
     void newBuffer(BufferHandle handle, const void* data, uint32_t size, BufferType type);

@@ -24,11 +24,11 @@ namespace jgfx {
     _reset = true;
   }
 
-  PipelineHandle ContextImpl::newPipeline(ShaderHandle vertex, ShaderHandle fragment, PassHandle pass, VertexAttributes attr) {
+  PipelineHandle ContextImpl::newPipeline(const PipelineDesc& pipelineDesc) {
     PipelineHandle handle;
     pipelineHandleAlloc.allocate(handle);
 
-    vkCtx->newPipeline(handle, vertex, fragment, pass, attr);
+    vkCtx->newPipeline(handle, pipelineDesc);
 
     return handle;
   }

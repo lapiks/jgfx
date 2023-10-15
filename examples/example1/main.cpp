@@ -121,7 +121,15 @@ public:
     jgfx::ShaderHandle fs = ctx.newShader(fragBin);
 
     _pass = ctx.newPass();
-    _pipeline = ctx.newPipeline(vs, fs, _pass, attr);
+
+    _pipeline = ctx.newPipeline(
+      jgfx::PipelineDesc{
+        .vs = vs,
+        .fs = fs,
+        .vertexAttributes = attr,
+        .cullMode = jgfx::FRONT
+      }
+    );
 
     _bindings.vertexBuffers[0] = vb;
     _bindings.indexBuffer = ib;

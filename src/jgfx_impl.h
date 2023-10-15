@@ -22,7 +22,7 @@ namespace jgfx {
     void shutdown();
     void reset(uint32_t width, uint32_t height);
 
-    PipelineHandle newPipeline(ShaderHandle vertex, ShaderHandle fragment, PassHandle pass, VertexAttributes attr);
+    PipelineHandle newPipeline(const PipelineDesc& pipelineDesc);
     PassHandle newPass();
     ShaderHandle newShader(const std::vector<char>& bytecode);
     BufferHandle newBuffer(const void* data, uint32_t size, BufferType type);
