@@ -42,11 +42,11 @@ namespace jgfx {
     return handle;
   }
 
-  ShaderHandle ContextImpl::newShader(const std::vector<char>& bytecode) {
+  ShaderHandle ContextImpl::newShader(const void* binData, uint32_t size) {
     ShaderHandle handle;
     shaderHandleAlloc.allocate(handle);
 
-    vkCtx->newShader(handle, bytecode);
+    vkCtx->newShader(handle, binData, size);
 
     return handle;
   }

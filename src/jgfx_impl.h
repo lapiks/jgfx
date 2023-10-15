@@ -24,7 +24,7 @@ namespace jgfx {
 
     PipelineHandle newPipeline(const PipelineDesc& pipelineDesc);
     PassHandle newPass();
-    ShaderHandle newShader(const std::vector<char>& bytecode);
+    ShaderHandle newShader(const void* binData, uint32_t size);
     BufferHandle newBuffer(const void* data, uint32_t size, BufferType type);
     UniformBufferHandle newUniformBuffer(uint32_t size);
     ImageHandle newImage();

@@ -51,7 +51,7 @@ namespace jgfx::vk {
   };
 
   struct ShaderVK {
-    bool create(VkDevice device, const std::vector<char>& bytecode);
+    bool create(VkDevice device, const void* binData, uint32_t size);
     bool createDescriptorSetLayout(VkDevice device);
     void destroy(VkDevice device);
     VkDescriptorSetLayout _descriptorSetLayout; // describes the kind of descriptors that can be bound
@@ -135,7 +135,7 @@ namespace jgfx::vk {
     // ObjectVK creation
     void newPipeline(PipelineHandle handle, const PipelineDesc& pipelineDesc);
     void newPass(PassHandle handle);
-    void newShader(ShaderHandle handle, const std::vector<char>& bytecode) override;
+    void newShader(ShaderHandle handle, const void* binData, uint32_t size) override;
     void newBuffer(BufferHandle handle, const void* data, uint32_t size, BufferType type);
     void newUniformBuffer(UniformBufferHandle handle, uint32_t size);
     void newImage(ImageHandle handle);

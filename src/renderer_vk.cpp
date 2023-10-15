@@ -264,10 +264,11 @@ namespace jgfx::vk {
     _swapChain._resolution = resolution;
   }
 
-  void RenderContextVK::newShader(ShaderHandle handle, const std::vector<char>& bytecode) {
+  void RenderContextVK::newShader(ShaderHandle handle, const void* binData, uint32_t size) {
     _shaders[handle.id].create(
       _device, 
-      bytecode
+      binData,
+      size
     );
   }
 
@@ -611,12 +612,12 @@ namespace jgfx::vk {
     _waitSemaphore = waitSemaphore;
   }
 
-  bool ShaderVK::create(VkDevice device, const std::vector<char>& bytecode) {
+  bool ShaderVK::create(VkDevice device, const void* binData, uint32_t size) {
     // Shader module def
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    createInfo.codeSize = bytecode.size();
-    createInfo.pCode = reinterpret_cast<const uint32_t*>(bytecode.data());
+    createInfo.codeSize = size;
+    createInfo.pCode = reinterpret_cast<const uint32_t*>(binData);
 
     // Shader module creation
     if (vkCreateShaderModule(device, &createInfo, nullptr, &_module) != VK_SUCCESS) {

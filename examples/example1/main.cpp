@@ -117,8 +117,8 @@ public:
     std::vector<char> vertBin = utils::readFile("../shaders/vert.spv");
     std::vector<char> fragBin = utils::readFile("../shaders/frag.spv");
 
-    jgfx::ShaderHandle vs = ctx.newShader(vertBin);
-    jgfx::ShaderHandle fs = ctx.newShader(fragBin);
+    jgfx::ShaderHandle vs = ctx.newShader(vertBin.data(), vertBin.size());
+    jgfx::ShaderHandle fs = ctx.newShader(fragBin.data(), fragBin.size());
 
     jgfx::ImageHandle img = ctx.newImage();
 
