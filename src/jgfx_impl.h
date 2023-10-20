@@ -27,7 +27,7 @@ namespace jgfx {
     ShaderHandle newShader(const void* binData, uint32_t size);
     BufferHandle newBuffer(const void* data, uint32_t size, BufferType type);
     UniformBufferHandle newUniformBuffer(uint32_t size);
-    ImageHandle newImage();
+    ImageHandle newImage(const void* data, uint32_t size, const TextureDesc& desc);
 
     void beginDefaultPass();
     void beginPass(PassHandle pass);

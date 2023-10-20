@@ -33,8 +33,8 @@ namespace jgfx
     return ctx.newBuffer(data, size, type);
   }
 
-  ImageHandle Context::newImage() {
-    return ctx.newImage();
+  ImageHandle Context::newImage(const void* data, uint32_t size, const TextureDesc& desc) {
+    return ctx.newImage(data, size, desc);
   }
 
   void Context::beginDefaultPass() {

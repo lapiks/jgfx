@@ -120,7 +120,16 @@ public:
     jgfx::ShaderHandle vs = ctx.newShader(vertBin.data(), vertBin.size());
     jgfx::ShaderHandle fs = ctx.newShader(fragBin.data(), fragBin.size());
 
-    jgfx::ImageHandle img = ctx.newImage();
+    utils::Image image;
+    image.read("../assets/texture.jpg");
+    /*jgfx::ImageHandle img = ctx.newImage(
+      image.pixels,
+      image.size,
+      jgfx::TextureDesc {
+        .width = static_cast<uint32_t>(image.width),
+        .height = static_cast<uint32_t>(image.height)
+      }
+    );*/
 
     _pass = ctx.newPass(
       jgfx::PassDesc{

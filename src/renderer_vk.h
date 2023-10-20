@@ -73,7 +73,7 @@ namespace jgfx::vk {
   };
 
   struct BufferVK {
-    bool create(VkDevice device, VkPhysicalDevice physicalDevice, uint32_t size, BufferType type, void** mappedMemory);
+    bool create(VkDevice device, VkPhysicalDevice physicalDevice, uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, void** mappedMemory);
     void unmapMemory(VkDevice device);
     void destroy(VkDevice device);
     VkBuffer _buffer = VK_NULL_HANDLE;
@@ -119,7 +119,12 @@ namespace jgfx::vk {
   };
 
   struct ImageVK {
-
+    bool create(VkDevice device, VkPhysicalDevice physicalDevice, VkCommandBuffer commandBuffer, uint32_t width, uint32_t height, const void* data);
+    void destroy(VkDevice device);
+    void copyBufferToImage(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, uint32_t bufferImageCopyCount, VkImage image, uint32_t width, uint32_t height);
+    void transitionImageLayout(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+    VkImage _textureImage;
+    VkDeviceMemory _deviceMemory;
   };
 
   struct RenderContextVK : public RenderContext {
@@ -131,6 +136,7 @@ namespace jgfx::vk {
     bool createDescriptorPool();
     VkResult createDebugUtilsMessengerEXT(const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator);
     void updateResolution(const Resolution& resolution);
+    void createStagingBuffer();
 
     // ObjectVK creation
     void newPipeline(PipelineHandle handle, const PipelineDesc& pipelineDesc);
@@ -138,7 +144,7 @@ namespace jgfx::vk {
     void newShader(ShaderHandle handle, const void* binData, uint32_t size) override;
     void newBuffer(BufferHandle handle, const void* data, uint32_t size, BufferType type);
     void newUniformBuffer(UniformBufferHandle handle, uint32_t size);
-    void newImage(ImageHandle handle);
+    void newImage(ImageHandle handle, const void* data, uint32_t size, const TextureDesc& desc);
 
     // cmds
     void beginDefaultPass();

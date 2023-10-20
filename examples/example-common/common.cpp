@@ -22,7 +22,8 @@ namespace utils {
     return buffer;
   }
 
-  void readImage() {
-
+  void Image::read(const std::string& filename) {
+    pixels = stbi_load(filename.data(), &width, &height, &texChannels, STBI_rgb_alpha);
+    size = width * height * texChannels;
   }
 }

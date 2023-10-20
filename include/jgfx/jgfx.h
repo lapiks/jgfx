@@ -105,6 +105,11 @@ namespace jgfx {
 
   };
 
+  struct TextureDesc {
+    uint32_t width = 0;
+    uint32_t height = 0;
+  };
+
   struct Context {
     // Initialization and shutdown
     bool init(const InitInfo& init);
@@ -115,7 +120,7 @@ namespace jgfx {
     PassHandle newPass(const PassDesc& passDesc);
     ShaderHandle newShader(const void* binData, uint32_t size);
     BufferHandle newBuffer(const void* data, uint32_t size, BufferType type);
-    ImageHandle newImage();
+    ImageHandle newImage(const void* data, uint32_t size, const TextureDesc& desc);
     // Drawing
     void beginDefaultPass();
     void beginPass(PassHandle pass);

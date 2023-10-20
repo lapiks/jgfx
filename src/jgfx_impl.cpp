@@ -69,11 +69,11 @@ namespace jgfx {
     return handle;
   }
 
-  ImageHandle ContextImpl::newImage() {
+  ImageHandle ContextImpl::newImage(const void* data, uint32_t size, const TextureDesc& desc) {
     ImageHandle handle;
     imageHandleAlloc.allocate(handle);
 
-    vkCtx->newImage(handle);
+    vkCtx->newImage(handle, data, size, desc);
 
     return handle;
   }
