@@ -35,6 +35,10 @@ namespace jgfx {
       resize(1024);
     }
 
+    ~CommandBuffer() {
+      delete _data;
+    }
+
     void resize(uint32_t size) {
       if (!_data) {
         _data = new uint8_t[size];
