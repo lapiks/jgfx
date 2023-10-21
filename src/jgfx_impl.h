@@ -5,7 +5,76 @@
 
 #include <memory>
 
+constexpr int MAX_BUFFER_COMMANDS = 4 << 10;
+
 namespace jgfx {
+  enum CommandType {
+    NewPipeline,
+    NewPass,
+    NewShader,
+    NewBuffer,
+    NewUniformBuffer,
+    NewImage,
+    BeginDefaultPass,
+    BeginPass,
+    ApplyPipeline,
+    ApplyBindings,
+    ApplyUniforms,
+    Draw,
+    DrawIndexed,
+    EndPass,
+    End,
+  };
+
+  struct CommandBuffer {
+    uint8_t* _data;
+    uint32_t _size = 0;
+    uint32_t _currentPos = 0;
+
+    CommandBuffer() {
+      resize(1024);
+    }
+
+    void resize(uint32_t size) {
+      if (!_data) {
+        _data = new uint8_t[size];
+      }
+      else {
+        realloc(_data, size);
+      }
+      _size = size;
+    }
+
+    void write(const void* data, uint32_t size) {
+      if (_currentPos + size > _size)
+        resize(_currentPos + size);
+
+      memcpy(&_data[_currentPos], data, size);
+      _currentPos += size;
+    }
+
+    template<typename T>
+    void write(const T& data) {
+      size_t size = sizeof(data);
+      write(reinterpret_cast<const uint8_t*>(&data), size);
+    }
+
+    void read(void* data, uint64_t size) {
+      memcpy(data, &_data[_currentPos], size);
+      _currentPos += size;
+    }
+
+    template<typename T>
+    void read(T& data) {
+      size_t size = sizeof(data);
+      read(reinterpret_cast<uint8_t*>(&data), size);
+    }
+
+    void reset() {
+      _currentPos = 0;
+    }
+  };
+
   template<typename T>
   struct HandleAllocator {
     uint16_t currentId = 0;
@@ -15,7 +84,7 @@ namespace jgfx {
   };
 
   /// <summary>
-  /// Private Implementation of the public context api
+  /// Private Implementation of the public context API
   /// </summary>
   struct ContextImpl {
     bool init(const InitInfo& initInfo);
@@ -39,11 +108,16 @@ namespace jgfx {
     void endPass();
     void commitFrame();
 
+    CommandBuffer& startCommand(CommandType cmdType);
+    void executeCommands();
+
   private:
     std::unique_ptr<vk::RenderContextVK> vkCtx;
 
     InitInfo _initInfo;
     bool _reset = false;
+
+    CommandBuffer _cmdBuffer;
 
     HandleAllocator<PipelineHandle> pipelineHandleAlloc;
     HandleAllocator<PassHandle> passHandleAlloc;

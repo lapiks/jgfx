@@ -21,6 +21,47 @@
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
+const float vertices[] = {
+        -1.0, -1.0, -1.0,   1.0, 0.0, 0.0, 1.0,
+         1.0, -1.0, -1.0,   1.0, 0.0, 0.0, 1.0,
+         1.0,  1.0, -1.0,   1.0, 0.0, 0.0, 1.0,
+        -1.0,  1.0, -1.0,   1.0, 0.0, 0.0, 1.0,
+
+        -1.0, -1.0,  1.0,   0.0, 1.0, 0.0, 1.0,
+         1.0, -1.0,  1.0,   0.0, 1.0, 0.0, 1.0,
+         1.0,  1.0,  1.0,   0.0, 1.0, 0.0, 1.0,
+        -1.0,  1.0,  1.0,   0.0, 1.0, 0.0, 1.0,
+
+        -1.0, -1.0, -1.0,   0.0, 0.0, 1.0, 1.0,
+        -1.0,  1.0, -1.0,   0.0, 0.0, 1.0, 1.0,
+        -1.0,  1.0,  1.0,   0.0, 0.0, 1.0, 1.0,
+        -1.0, -1.0,  1.0,   0.0, 0.0, 1.0, 1.0,
+
+        1.0, -1.0, -1.0,    1.0, 0.5, 0.0, 1.0,
+        1.0,  1.0, -1.0,    1.0, 0.5, 0.0, 1.0,
+        1.0,  1.0,  1.0,    1.0, 0.5, 0.0, 1.0,
+        1.0, -1.0,  1.0,    1.0, 0.5, 0.0, 1.0,
+
+        -1.0, -1.0, -1.0,   0.0, 0.5, 1.0, 1.0,
+        -1.0, -1.0,  1.0,   0.0, 0.5, 1.0, 1.0,
+         1.0, -1.0,  1.0,   0.0, 0.5, 1.0, 1.0,
+         1.0, -1.0, -1.0,   0.0, 0.5, 1.0, 1.0,
+
+        -1.0,  1.0, -1.0,   1.0, 0.0, 0.5, 1.0,
+        -1.0,  1.0,  1.0,   1.0, 0.0, 0.5, 1.0,
+         1.0,  1.0,  1.0,   1.0, 0.0, 0.5, 1.0,
+         1.0,  1.0, -1.0,   1.0, 0.0, 0.5, 1.0
+};
+
+const uint16_t indices[] = {
+  0, 1, 2,  0, 2, 3,
+  6, 5, 4,  7, 6, 4,
+  8, 9, 10,  8, 10, 11,
+  14, 13, 12,  15, 14, 12,
+  16, 17, 18,  16, 18, 19,
+  22, 21, 20,  23, 22, 20
+};
+
 class App {
 public:
   static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
@@ -64,47 +105,6 @@ public:
 
     ctx.init(initInfos);
 
-    const float vertices[] = {
-        -1.0, -1.0, -1.0,   1.0, 0.0, 0.0, 1.0,
-         1.0, -1.0, -1.0,   1.0, 0.0, 0.0, 1.0,
-         1.0,  1.0, -1.0,   1.0, 0.0, 0.0, 1.0,
-        -1.0,  1.0, -1.0,   1.0, 0.0, 0.0, 1.0,
-
-        -1.0, -1.0,  1.0,   0.0, 1.0, 0.0, 1.0,
-         1.0, -1.0,  1.0,   0.0, 1.0, 0.0, 1.0,
-         1.0,  1.0,  1.0,   0.0, 1.0, 0.0, 1.0,
-        -1.0,  1.0,  1.0,   0.0, 1.0, 0.0, 1.0,
-
-        -1.0, -1.0, -1.0,   0.0, 0.0, 1.0, 1.0,
-        -1.0,  1.0, -1.0,   0.0, 0.0, 1.0, 1.0,
-        -1.0,  1.0,  1.0,   0.0, 0.0, 1.0, 1.0,
-        -1.0, -1.0,  1.0,   0.0, 0.0, 1.0, 1.0,
-
-        1.0, -1.0, -1.0,    1.0, 0.5, 0.0, 1.0,
-        1.0,  1.0, -1.0,    1.0, 0.5, 0.0, 1.0,
-        1.0,  1.0,  1.0,    1.0, 0.5, 0.0, 1.0,
-        1.0, -1.0,  1.0,    1.0, 0.5, 0.0, 1.0,
-
-        -1.0, -1.0, -1.0,   0.0, 0.5, 1.0, 1.0,
-        -1.0, -1.0,  1.0,   0.0, 0.5, 1.0, 1.0,
-         1.0, -1.0,  1.0,   0.0, 0.5, 1.0, 1.0,
-         1.0, -1.0, -1.0,   0.0, 0.5, 1.0, 1.0,
-
-        -1.0,  1.0, -1.0,   1.0, 0.0, 0.5, 1.0,
-        -1.0,  1.0,  1.0,   1.0, 0.0, 0.5, 1.0,
-         1.0,  1.0,  1.0,   1.0, 0.0, 0.5, 1.0,
-         1.0,  1.0, -1.0,   1.0, 0.0, 0.5, 1.0
-    };
-
-    const uint16_t indices[] = {
-      0, 1, 2,  0, 2, 3,
-      6, 5, 4,  7, 6, 4,
-      8, 9, 10,  8, 10, 11,
-      14, 13, 12,  15, 14, 12,
-      16, 17, 18,  16, 18, 19,
-      22, 21, 20,  23, 22, 20
-    };
-
     jgfx::VertexAttributes attr;
     attr.begin();
     attr.add(0, jgfx::FLOAT3);
@@ -114,11 +114,11 @@ public:
     jgfx::BufferHandle vb = ctx.newBuffer(vertices, sizeof(vertices), jgfx::VERTEX_BUFFER);
     jgfx::BufferHandle ib = ctx.newBuffer(indices, sizeof(indices), jgfx::INDEX_BUFFER);
 
-    std::vector<char> vertBin = utils::readFile("../shaders/vert.spv");
-    std::vector<char> fragBin = utils::readFile("../shaders/frag.spv");
+    _vertBin = utils::readFile("../shaders/vert.spv");
+    _fragBin = utils::readFile("../shaders/frag.spv");
 
-    jgfx::ShaderHandle vs = ctx.newShader(vertBin.data(), vertBin.size());
-    jgfx::ShaderHandle fs = ctx.newShader(fragBin.data(), fragBin.size());
+    jgfx::ShaderHandle vs = ctx.newShader(_vertBin.data(), _vertBin.size());
+    jgfx::ShaderHandle fs = ctx.newShader(_fragBin.data(), _fragBin.size());
 
     utils::Image image;
     image.read("../assets/texture.jpg");
@@ -191,6 +191,9 @@ public:
   jgfx::PipelineHandle _pipeline;
   jgfx::Bindings _bindings;
   Uniforms _uniforms;
+
+  std::vector<char> _vertBin;
+  std::vector<char> _fragBin;
 
   GLFWwindow* window = nullptr;
   jgfx::Context ctx;

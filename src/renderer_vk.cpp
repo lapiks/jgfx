@@ -374,7 +374,7 @@ namespace jgfx::vk {
   }
 
   void RenderContextVK::draw(uint32_t firstVertex, uint32_t vertexCount) {
-    for (int i = 0; i < _currentUniformBufferId; i++) {
+    for (uint32_t i = 0; i < _currentUniformBufferId; i++) {
       _uniformBuffers[_currentUniformBufferId].createDescriptorSets(_device, _descriptorPool, _shaders[_currentVertexShader.id]._descriptorSetLayout, _cmdQueue._currentFrame);
       _cmdQueue.bindDescriptorSets(_pipelines[_currentPipeline.id]._pipelineLayout, _uniformBuffers[i]._descriptorSets);
     }
@@ -383,7 +383,7 @@ namespace jgfx::vk {
   }
 
   void RenderContextVK::drawIndexed(uint32_t firstIndex, uint32_t indexCount) {
-    for (int i = 0; i < _currentUniformBufferId; i++) {
+    for (uint32_t i = 0; i < _currentUniformBufferId; i++) {
       _uniformBuffers[i].createDescriptorSets(_device, _descriptorPool, _shaders[_currentVertexShader.id]._descriptorSetLayout, _cmdQueue._currentFrame);
       _cmdQueue.bindDescriptorSets(_pipelines[_currentPipeline.id]._pipelineLayout, _uniformBuffers[i]._descriptorSets);
     }
@@ -405,7 +405,7 @@ namespace jgfx::vk {
     // starts a new frame
     _cmdQueue.newFrame(_device);
 
-    for (int i = 0; i < _currentUniformBufferId; i++) {
+    for (uint32_t i = 0; i < _currentUniformBufferId; i++) {
       vkFreeDescriptorSets(_device, _descriptorPool, 1, &_uniformBuffers[i]._descriptorSets[_cmdQueue._currentFrame]);
     }
 
