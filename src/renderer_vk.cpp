@@ -142,6 +142,10 @@ namespace jgfx::vk {
     _swapChain.destroy(_device);
     _swapChain.destroySurface(_instance);
 
+    for (int i = 0; i < MAX_IMAGES; i++) {
+      _images[i].destroy(_device);
+    }
+
     for (int i = 0; i < MAX_BUFFERS; i++) {
       _buffers[i].destroy(_device);
     }
@@ -334,7 +338,7 @@ namespace jgfx::vk {
     _images[handle.id].create(
       _device,
       _physicalDevice,
-      _cmdQueue._commandBuffers[_cmdQueue._currentFrame],
+      _cmdQueue,
       desc.width,
       desc.height,
       data
@@ -350,9 +354,6 @@ namespace jgfx::vk {
   }
 
   void RenderContextVK::beginPass(PassHandle pass) {
-    //if(_swapChain._framebuffers.empty())
-    //  _swapChain.createFramebuffers(_device, _passes[pass.id]._renderPass);
-
     _cmdQueue.beginPass(
       _passes[pass.id]._renderPass,
       _swapChain._framebuffers[_swapChain._currentImageIdx]._framebuffer,
@@ -416,6 +417,7 @@ namespace jgfx::vk {
 
     _swapChain.acquire(_device);
 
+    _cmdQueue.releaseResources(_device);
     _cmdQueue.begin();
   }
 
@@ -878,8 +880,8 @@ namespace jgfx::vk {
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.size = size;
     bufferInfo.usage = usage;
-    
     bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
     if (vkCreateBuffer(device, &bufferInfo, nullptr, &_buffer) != VK_SUCCESS) 
       return false;
 
@@ -1159,6 +1161,23 @@ namespace jgfx::vk {
     _waitSemaphore = waitSemaphore;
   }
 
+  void CommandQueueVK::addResourceToRelease(VkObjectType type, uint64_t handle) {
+    _toRelease[_currentFrame].push_back({ type, handle });
+  }
+
+  void CommandQueueVK::releaseResources(VkDevice device) {
+    for (const Resource& resource : _toRelease[_currentFrame]) {
+      switch (resource.type) {
+      case VK_OBJECT_TYPE_BUFFER: vkDestroyBuffer(device, VkBuffer(resource.handle), nullptr); break;
+      case VK_OBJECT_TYPE_DEVICE_MEMORY: vkFreeMemory(device, VkDeviceMemory(resource.handle), nullptr); break;
+      default: // not handled yet
+        break;
+      }
+    }
+
+    _toRelease[_currentFrame].clear();
+  }
+
   void CommandQueueVK::bindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* vertexBuffers) {
     VkDeviceSize offsets[] = { 0 };
     vkCmdBindVertexBuffers(_commandBuffers[_currentFrame], firstBinding, bindingCount, vertexBuffers, offsets);
@@ -1168,7 +1187,7 @@ namespace jgfx::vk {
     vkCmdBindIndexBuffer(_commandBuffers[_currentFrame], indexBuffer, 0, VK_INDEX_TYPE_UINT16);
   }
 
-  bool ImageVK::create(VkDevice device, VkPhysicalDevice physicalDevice, VkCommandBuffer commandBuffer, uint32_t width, uint32_t height, const void* data) {
+  bool ImageVK::create(VkDevice device, VkPhysicalDevice physicalDevice, CommandQueueVK& cmdQueue, uint32_t width, uint32_t height, const void* data) {
     uint64_t imageSize = width * height * 4;
 
     BufferVK stagingBuffer;
@@ -1209,21 +1228,24 @@ namespace jgfx::vk {
     allocInfo.memoryTypeIndex = utils::findMemoryType(physicalDevice, memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     if (vkAllocateMemory(device, &allocInfo, nullptr, &_deviceMemory) != VK_SUCCESS) {
-      throw std::runtime_error("failed to allocate image memory!");
+      return false;
     }
 
     vkBindImageMemory(device, _textureImage, _deviceMemory, 0);
 
+    VkCommandBuffer cmdBuf = cmdQueue._commandBuffers[cmdQueue._currentFrame];
+
     // transition for copy
-    transitionImageLayout(commandBuffer, _textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    transitionImageLayout(cmdBuf, _textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
     // copy staging buffer data to host buffer
-    copyBufferToImage(commandBuffer, stagingBuffer._buffer, 1, _textureImage, width, height);
+    copyBufferToImage(cmdBuf, stagingBuffer._buffer, 1, _textureImage, width, height);
 
     // transition for shader access
-    transitionImageLayout(commandBuffer, _textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    transitionImageLayout(cmdBuf, _textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-    stagingBuffer.destroy(device);
+    cmdQueue.addResourceToRelease(VK_OBJECT_TYPE_BUFFER, uint64_t(stagingBuffer._buffer));
+    cmdQueue.addResourceToRelease(VK_OBJECT_TYPE_DEVICE_MEMORY, uint64_t(stagingBuffer._memory));
 
     return true;
   }
@@ -1293,7 +1315,7 @@ namespace jgfx::vk {
       destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
     }
     else {
-      throw std::invalid_argument("unsupported layout transition!");
+      throw std::invalid_argument("unsupported layout transition");
     }
 
     vkCmdPipelineBarrier(

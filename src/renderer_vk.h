@@ -109,6 +109,8 @@ namespace jgfx::vk {
     void submit();
     void newFrame(VkDevice device);
     void setWaitSemaphore(VkSemaphore waitSemaphore);
+    void addResourceToRelease(VkObjectType type, uint64_t handle);
+    void releaseResources(VkDevice device);
     VkCommandPool _commandPool = VK_NULL_HANDLE;
     VkCommandBuffer _commandBuffers[MAX_FRAMES_IN_FLIGHT];
     VkFence _inFlightFences[MAX_FRAMES_IN_FLIGHT]; // wait for frame ending to start a new one
@@ -116,10 +118,17 @@ namespace jgfx::vk {
     VkSemaphore _renderFinishedSemaphores[MAX_FRAMES_IN_FLIGHT]; // signal that rendering has finished and presentation can happen
     VkSemaphore _waitSemaphore = VK_NULL_HANDLE;
     uint32_t _currentFrame = 0;
+
+    struct Resource {
+      VkObjectType type;
+      uint64_t handle;
+    };
+
+    std::vector<Resource> _toRelease[MAX_FRAMES_IN_FLIGHT];
   };
 
   struct ImageVK {
-    bool create(VkDevice device, VkPhysicalDevice physicalDevice, VkCommandBuffer commandBuffer, uint32_t width, uint32_t height, const void* data);
+    bool create(VkDevice device, VkPhysicalDevice physicalDevice, CommandQueueVK& cmdQueue, uint32_t width, uint32_t height, const void* data);
     void destroy(VkDevice device);
     void copyBufferToImage(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, uint32_t bufferImageCopyCount, VkImage image, uint32_t width, uint32_t height);
     void transitionImageLayout(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
