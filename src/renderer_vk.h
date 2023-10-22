@@ -130,10 +130,14 @@ namespace jgfx::vk {
   struct ImageVK {
     bool create(VkDevice device, VkPhysicalDevice physicalDevice, CommandQueueVK& cmdQueue, uint32_t width, uint32_t height, const void* data);
     void destroy(VkDevice device);
+    bool createView(VkDevice device);
+    bool createSampler(VkDevice device, VkPhysicalDevice physicalDevice);
     void copyBufferToImage(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, uint32_t bufferImageCopyCount, VkImage image, uint32_t width, uint32_t height);
     void transitionImageLayout(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
     VkImage _textureImage;
     VkDeviceMemory _deviceMemory;
+    VkImageView _imageView;
+    VkSampler _sampler;
   };
 
   struct RenderContextVK : public RenderContext {
@@ -170,6 +174,7 @@ namespace jgfx::vk {
     VkInstance _instance = VK_NULL_HANDLE;
     VkDebugUtilsMessengerEXT _debugMessenger = VK_NULL_HANDLE;
     VkPhysicalDevice _physicalDevice = VK_NULL_HANDLE;
+    VkPhysicalDeviceFeatures _physicalDeviceFeatures;
     VkDevice _device = VK_NULL_HANDLE;
     VkDescriptorPool _descriptorPool = VK_NULL_HANDLE;
     

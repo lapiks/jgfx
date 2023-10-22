@@ -178,9 +178,16 @@ namespace jgfx::vk {
     vkEnumeratePhysicalDevices(_instance, &deviceCount, devices.data());
 
     // check for the first suitable device
+    // todo better selection of physical device
     for (const auto& device : devices) {
       if (utils::isDeviceSuitable(device, surface, deviceExtensions)) {
         _physicalDevice = device;
+
+        VkPhysicalDeviceFeatures supportedFeatures;
+        vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
+
+        _physicalDeviceFeatures.samplerAnisotropy = supportedFeatures.samplerAnisotropy;
+
         return true;
       }
     }
@@ -208,15 +215,12 @@ namespace jgfx::vk {
       queueCreateInfos.push_back(queueCreateInfo);
     }
 
-    // define needed features
-    VkPhysicalDeviceFeatures deviceFeatures{};
-
     // Logical device def
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
     createInfo.pQueueCreateInfos = queueCreateInfos.data();
-    createInfo.pEnabledFeatures = &deviceFeatures;
+    createInfo.pEnabledFeatures = &_physicalDeviceFeatures;
     createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
     // Device level's validation layers are deprecated
@@ -1247,12 +1251,64 @@ namespace jgfx::vk {
     cmdQueue.addResourceToRelease(VK_OBJECT_TYPE_BUFFER, uint64_t(stagingBuffer._buffer));
     cmdQueue.addResourceToRelease(VK_OBJECT_TYPE_DEVICE_MEMORY, uint64_t(stagingBuffer._memory));
 
+    createView(device);
+
     return true;
   }
 
   void ImageVK::destroy(VkDevice device) {
+    vkDestroySampler(device, _sampler, nullptr);
+    vkDestroyImageView(device, _imageView, nullptr);
     vkDestroyImage(device, _textureImage, nullptr);
     vkFreeMemory(device, _deviceMemory, nullptr);
+  }
+
+  bool ImageVK::createView(VkDevice device) {
+    VkImageViewCreateInfo viewInfo{};
+    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    viewInfo.image = _textureImage;
+    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    viewInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
+    viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    viewInfo.subresourceRange.baseMipLevel = 0;
+    viewInfo.subresourceRange.levelCount = 1;
+    viewInfo.subresourceRange.baseArrayLayer = 0;
+    viewInfo.subresourceRange.layerCount = 1;
+
+    if (vkCreateImageView(device, &viewInfo, nullptr, &_imageView) != VK_SUCCESS) {
+      return false;
+;   }
+
+    return true;
+  }
+
+  bool ImageVK::createSampler(VkDevice device, VkPhysicalDevice physicalDevice) {
+    VkSamplerCreateInfo samplerInfo{};
+    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    samplerInfo.magFilter = VK_FILTER_LINEAR;
+    samplerInfo.minFilter = VK_FILTER_LINEAR;
+    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.anisotropyEnable = VK_TRUE;
+    samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    samplerInfo.unnormalizedCoordinates = VK_FALSE;
+    samplerInfo.compareEnable = VK_FALSE;
+    samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerInfo.mipLodBias = 0.0f;
+    samplerInfo.minLod = 0.0f;
+    samplerInfo.maxLod = 0.0f;
+
+    VkPhysicalDeviceProperties properties{};
+    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+    samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
+
+    if (vkCreateSampler(device, &samplerInfo, nullptr, &_sampler) != VK_SUCCESS) {
+      return false;
+    }
+
+    return true;
   }
 
   void ImageVK::copyBufferToImage(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, uint32_t bufferImageCopyCount, VkImage image, uint32_t width, uint32_t height) {
