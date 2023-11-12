@@ -1,6 +1,6 @@
 #pragma once
 
-#include "renderer_vk.h"
+#include "renderer.h"
 #include "jgfx/jgfx.h"
 
 #include <memory>
@@ -116,7 +116,7 @@ namespace jgfx {
     void executeCommands();
 
   private:
-    std::unique_ptr<vk::RenderContextVK> vkCtx;
+    std::unique_ptr<RenderContext> _ctx;
 
     InitInfo _initInfo;
     bool _reset = false;

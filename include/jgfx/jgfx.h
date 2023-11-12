@@ -21,7 +21,13 @@ namespace jgfx {
     uint32_t height = 0;
   };
 
+  enum GraphicsAPI {
+    Vulkan,
+    OpenGL,
+  };
+
   struct InitInfo {
+    GraphicsAPI api;
     PlatformData platformData;
     std::vector<const char*> extensionNames;
     Resolution resolution;

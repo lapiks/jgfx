@@ -1,3 +1,5 @@
+#include <glad/glad.h>
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
@@ -65,6 +67,9 @@ const uint16_t indices[] = {
 class App {
 public:
   static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+    if (width == 0 || height == 0)
+      return;
+
     auto app = reinterpret_cast<App*>(glfwGetWindowUserPointer(window));
     app->ctx.reset(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 
@@ -75,9 +80,25 @@ public:
   GLFWwindow* initWindow() {
     glfwInit();
 
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    //vulkan
+    //glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    //gl
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
     GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "jgfx", nullptr, nullptr);
+    if (window == nullptr)
+    {
+      std::cout << "Failed to create GLFW window" << std::endl;
+      glfwTerminate();
+      return nullptr;
+    }
+
+    //gl
+    glfwMakeContextCurrent(window);
+
     glfwSetWindowUserPointer(window, this);
     glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
     return window;
@@ -85,6 +106,12 @@ public:
 
   void init() {
     window = initWindow();
+
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+    {
+      std::cout << "Failed to initialize GLAD" << std::endl;
+      return;
+    }
 
     uint32_t extensionCount = 0;
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
@@ -99,6 +126,7 @@ public:
     pd.nativeWindowHandle = glfwGetWin32Window(window);
 
     jgfx::InitInfo initInfos;
+    initInfos.api = jgfx::GraphicsAPI::Vulkan;
     initInfos.platformData = pd;
     initInfos.extensionNames = extensions;
     initInfos.resolution = { WIDTH, HEIGHT };
@@ -172,6 +200,8 @@ public:
       ctx.drawIndexed(0, 36);
       ctx.endPass();
       ctx.commitFrame();
+
+      glfwSwapBuffers(window);
     }
   }
 

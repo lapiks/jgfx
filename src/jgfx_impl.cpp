@@ -3,19 +3,26 @@
 
 #include "jgfx/jgfx.h"
 
+#include "renderer_vk.h"
+#include "renderer_gl.h"
+
 namespace jgfx {
   bool ContextImpl::init(const InitInfo& initInfo) {
-    if (vkCtx) // already initialized
+    if (_ctx) // already initialized
       return false;
 
-    vkCtx = std::make_unique<vk::RenderContextVK>();
+    switch (initInfo.api)
+    {
+    case GraphicsAPI::Vulkan: _ctx = std::make_unique<vk::RenderContextVK>(); break;
+    case GraphicsAPI::OpenGL: _ctx = std::make_unique<gl::RenderContextGL>(); break;
+    }
 
     _initInfo = initInfo;
-    return vkCtx->init(initInfo);
+    return _ctx->init(initInfo);
   }
 
   void ContextImpl::shutdown() {
-    vkCtx->shutdown();
+    _ctx->shutdown();
   }
 
   void ContextImpl::reset(uint32_t width, uint32_t height) {
@@ -133,11 +140,11 @@ namespace jgfx {
 
   void ContextImpl::commitFrame() {
     if (_reset) {
-      vkCtx->updateResolution(_initInfo.resolution);
+      _ctx->updateResolution(_initInfo.resolution);
       _reset = false;
     }
     executeCommands();
-    vkCtx->commitFrame();
+    _ctx->commitFrame();
   }
 
   CommandBuffer& ContextImpl::startCommand(CommandType cmdType) {
@@ -161,7 +168,7 @@ namespace jgfx {
         _cmdBuffer.read(handle);
         PipelineDesc desc;
         _cmdBuffer.read(desc);
-        vkCtx->newPipeline(handle, desc);
+        _ctx->newPipeline(handle, desc);
       }
         break;
       case NewPass: {
@@ -169,7 +176,7 @@ namespace jgfx {
         _cmdBuffer.read(handle);
         PassDesc desc;
         _cmdBuffer.read(desc);
-        vkCtx->newPass(handle, desc);
+        _ctx->newPass(handle, desc);
       }
         break;
       case NewShader: {
@@ -179,7 +186,7 @@ namespace jgfx {
         _cmdBuffer.read(data);
         uint32_t size;
         _cmdBuffer.read(size);
-        vkCtx->newShader(handle, data, size);
+        _ctx->newShader(handle, data, size);
       }
         break;
       case NewBuffer: {
@@ -191,7 +198,7 @@ namespace jgfx {
         _cmdBuffer.read(size);
         BufferType type;
         _cmdBuffer.read(type);
-        vkCtx->newBuffer(handle, data, size, type);
+        _ctx->newBuffer(handle, data, size, type);
       }
         break;
       case NewUniformBuffer: {
@@ -199,7 +206,7 @@ namespace jgfx {
         _cmdBuffer.read(handle);
         uint32_t size;
         _cmdBuffer.read(size);
-        vkCtx->newUniformBuffer(handle, size);
+        _ctx->newUniformBuffer(handle, size);
       }
         break;
       case NewImage: {
@@ -211,29 +218,29 @@ namespace jgfx {
         _cmdBuffer.read(size);
         TextureDesc desc;
         _cmdBuffer.read(desc);
-        vkCtx->newImage(handle, data, size, desc);
+        _ctx->newImage(handle, data, size, desc);
       }
         break;
       case BeginDefaultPass: {
-        vkCtx->beginDefaultPass();
+        _ctx->beginDefaultPass();
       }
         break;
       case BeginPass: {
         PassHandle pass;
         _cmdBuffer.read(pass);
-        vkCtx->beginPass(pass);
+        _ctx->beginPass(pass);
       }
         break;
       case ApplyPipeline: {
         PipelineHandle pipe;
         _cmdBuffer.read(pipe);
-        vkCtx->applyPipeline(pipe);
+        _ctx->applyPipeline(pipe);
       }
         break;
       case ApplyBindings: {
         Bindings bindings;
         _cmdBuffer.read(bindings);
-        vkCtx->applyBindings(bindings);
+        _ctx->applyBindings(bindings);
       }
         break;
       case ApplyUniforms: {
@@ -243,7 +250,7 @@ namespace jgfx {
         _cmdBuffer.read(data);
         uint32_t size;
         _cmdBuffer.read(size);
-        vkCtx->applyUniforms(stage, data, size);
+        _ctx->applyUniforms(stage, data, size);
       }
         break;
       case Draw: {
@@ -251,7 +258,7 @@ namespace jgfx {
         _cmdBuffer.read(firstVertex);
         uint32_t vertexCount;
         _cmdBuffer.read(vertexCount);
-        vkCtx->draw(firstVertex, vertexCount);
+        _ctx->draw(firstVertex, vertexCount);
       }
         break;
       case DrawIndexed: {
@@ -259,11 +266,11 @@ namespace jgfx {
         _cmdBuffer.read(firstIndex);
         uint32_t indexCount;
         _cmdBuffer.read(indexCount);
-        vkCtx->drawIndexed(firstIndex, indexCount);
+        _ctx->drawIndexed(firstIndex, indexCount);
       }
         break;
       case EndPass: {
-        vkCtx->endPass();
+        _ctx->endPass();
       }
         break;
       case End: {

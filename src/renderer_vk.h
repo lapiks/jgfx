@@ -140,27 +140,27 @@ namespace jgfx::vk {
     bool createLogicalDevice(VkSurfaceKHR surface, const std::vector<const char*>& deviceExtensions);
     bool createDescriptorPool();
     VkResult createDebugUtilsMessengerEXT(const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator);
-    void updateResolution(const Resolution& resolution);
+    void updateResolution(const Resolution& resolution) override;
     void createStagingBuffer();
 
     // ObjectVK creation
-    void newPipeline(PipelineHandle handle, const PipelineDesc& pipelineDesc);
-    void newPass(PassHandle handle, const PassDesc& passDesc);
+    void newPipeline(PipelineHandle handle, const PipelineDesc& pipelineDesc) override;
+    void newPass(PassHandle handle, const PassDesc& passDesc) override;
     void newShader(ShaderHandle handle, const void* binData, uint32_t size) override;
-    void newBuffer(BufferHandle handle, const void* data, uint32_t size, BufferType type);
-    void newUniformBuffer(UniformBufferHandle handle, uint32_t size);
-    void newImage(ImageHandle handle, const void* data, uint32_t size, const TextureDesc& desc);
+    void newBuffer(BufferHandle handle, const void* data, uint32_t size, BufferType type) override;
+    void newUniformBuffer(UniformBufferHandle handle, uint32_t size) override;
+    void newImage(ImageHandle handle, const void* data, uint32_t size, const TextureDesc& desc) override;
 
     // cmds
-    void beginDefaultPass();
-    void beginPass(PassHandle pass);
-    void applyPipeline(PipelineHandle pipe);
-    void applyBindings(const Bindings& bindings);
-    void applyUniforms(ShaderStage stage, const void* data, uint32_t size);
-    void draw(uint32_t firstVertex, uint32_t vertexCount);
-    void drawIndexed(uint32_t firstIndex, uint32_t indexCount);
-    void endPass();
-    void commitFrame();
+    void beginDefaultPass() override;
+    void beginPass(PassHandle pass) override;
+    void applyPipeline(PipelineHandle pipe) override;
+    void applyBindings(const Bindings& bindings) override;
+    void applyUniforms(ShaderStage stage, const void* data, uint32_t size) override;
+    void draw(uint32_t firstVertex, uint32_t vertexCount) override;
+    void drawIndexed(uint32_t firstIndex, uint32_t indexCount) override;
+    void endPass() override;
+    void commitFrame() override;
     
   private:
     VkInstance _instance = VK_NULL_HANDLE;
