@@ -148,6 +148,8 @@ public:
     jgfx::ShaderHandle vs = ctx.newShader(jgfx::ShaderType::VERTEX, _vertBin.data(), _vertBin.size());
     jgfx::ShaderHandle fs = ctx.newShader(jgfx::ShaderType::FRAGMENT, _fragBin.data(), _fragBin.size());
 
+    jgfx::ProgramHandle program = ctx.newProgram(vs, fs);
+
     utils::Image image;
     image.read("../assets/texture.jpg");
     jgfx::ImageHandle img = ctx.newImage(
@@ -167,8 +169,7 @@ public:
 
     _pipeline = ctx.newPipeline(
       jgfx::PipelineDesc{
-        .vs = vs,
-        .fs = fs,
+        .program = program,
         .vertexAttributes = attr,
         .cullMode = jgfx::BACK
       }

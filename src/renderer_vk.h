@@ -51,6 +51,13 @@ namespace jgfx::vk {
     VkDescriptorSetLayoutBinding binding;
   };
 
+  struct ProgramVK {
+    bool create(ShaderHandle vs, ShaderHandle fs);
+
+    ShaderHandle _vs;
+    ShaderHandle _fs;
+  };
+
   struct PassVK {
     bool create(VkDevice device, VkFormat swapChainImageFormat);
     void destroy(VkDevice device);
@@ -147,6 +154,7 @@ namespace jgfx::vk {
     void newPipeline(PipelineHandle handle, const PipelineDesc& pipelineDesc) override;
     void newPass(PassHandle handle, const PassDesc& passDesc) override;
     void newShader(ShaderHandle handle, ShaderType type, const void* binData, uint32_t size) override;
+    void newProgram(ProgramHandle handle, ShaderHandle vs, ShaderHandle fs) override;
     void newBuffer(BufferHandle handle, const void* data, uint32_t size, BufferType type) override;
     void newUniformBuffer(UniformBufferHandle handle, uint32_t size) override;
     void newImage(ImageHandle handle, const void* data, uint32_t size, const TextureDesc& desc) override;
@@ -179,6 +187,7 @@ namespace jgfx::vk {
     CommandQueueVK _cmdQueue;
     PassVK _defaultPass;
     ShaderVK _shaders[MAX_SHADERS];
+    ProgramVK _programs[MAX_PROGRAMS];
     PipelineVK _pipelines[MAX_PIPELINES];
     PassVK _passes[MAX_PASSES];  
     BufferVK _buffers[MAX_BUFFERS];

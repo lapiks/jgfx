@@ -29,6 +29,10 @@ namespace jgfx
     return ctx.newShader(type, binData, size);
   }
 
+  ProgramHandle Context::newProgram(ShaderHandle vs, ShaderHandle fs) {
+    return ctx.newProgram(vs, fs);
+  }
+
   BufferHandle Context::newBuffer(const void* data, uint32_t size, BufferType type) {
     return ctx.newBuffer(data, size, type);
   }

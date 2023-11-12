@@ -63,6 +63,18 @@ namespace jgfx {
     return handle;
   }
 
+  ProgramHandle ContextImpl::newProgram(ShaderHandle vs, ShaderHandle fs)
+  {
+    CommandBuffer& cmdBuf = startCommand(CommandType::NewProgram);
+    ProgramHandle handle;
+    programHandleAlloc.allocate(handle);
+    cmdBuf.write(handle);
+    cmdBuf.write(vs);
+    cmdBuf.write(fs);
+
+    return handle;
+  }
+
   BufferHandle ContextImpl::newBuffer(const void* data, uint32_t size, BufferType type) {
     CommandBuffer& cmdBuf = startCommand(CommandType::NewBuffer);
     BufferHandle handle;
@@ -192,6 +204,16 @@ namespace jgfx {
         _ctx->newShader(handle, type, data, size);
       }
         break;
+      case NewProgram: {
+        ProgramHandle handle;
+        _cmdBuffer.read(handle);
+        ShaderHandle vs;
+        _cmdBuffer.read(vs);
+        ShaderHandle fs;
+        _cmdBuffer.read(fs);
+        _ctx->newProgram(handle, vs, fs);
+      }
+                    break;
       case NewBuffer: {
         BufferHandle handle;
         _cmdBuffer.read(handle);

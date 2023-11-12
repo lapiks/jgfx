@@ -280,6 +280,13 @@ namespace jgfx::vk {
     );
   }
 
+  void RenderContextVK::newProgram(ProgramHandle handle, ShaderHandle vs, ShaderHandle fs) {
+    _programs[handle.id].create(
+      vs,
+      fs
+    );
+  }
+
   void RenderContextVK::newBuffer(BufferHandle handle, const void* data, uint32_t size, BufferType type) {
     void* mappedMem;
 
@@ -319,16 +326,19 @@ namespace jgfx::vk {
   }
 
   void RenderContextVK::newPipeline(PipelineHandle handle, const PipelineDesc& pipelineDesc) {
+    const ProgramVK& program = _programs[pipelineDesc.program.id];
+    const ShaderVK& vs = _shaders[program._vs.id];
+    const ShaderVK& fs = _shaders[program._fs.id];
     _pipelines[handle.id].create(
       _device, 
-      _shaders[pipelineDesc.vs.id], 
-      _shaders[pipelineDesc.fs.id],
+      vs,
+      fs,
       _defaultPass,//_passes[pass.id]
       pipelineDesc      
     );
 
-    _currentVertexShader = pipelineDesc.vs;
-    _currentFragmentShader = pipelineDesc.fs;
+    _currentVertexShader = program._vs;
+    _currentFragmentShader = program._fs;
   }
 
   void RenderContextVK::newPass(PassHandle handle, const PassDesc& passDesc) {
@@ -674,6 +684,13 @@ namespace jgfx::vk {
   void ShaderVK::destroy(VkDevice device) {
     vkDestroyDescriptorSetLayout(device, _descriptorSetLayout, nullptr);
     vkDestroyShaderModule(device, _module, nullptr);
+  }
+
+  bool ProgramVK::create(ShaderHandle vs, ShaderHandle fs) {
+    _vs = vs;
+    _fs = fs;
+
+    return true;
   }
 
   bool PipelineVK::create(VkDevice device, const ShaderVK& vertex, const ShaderVK& fragment, const PassVK& pass, const PipelineDesc& pipelineDesc) {

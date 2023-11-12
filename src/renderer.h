@@ -23,6 +23,7 @@ namespace jgfx {
     virtual void newPipeline(PipelineHandle handle, const PipelineDesc& pipelineDesc) = 0;
     virtual void newPass(PassHandle handle, const PassDesc& passDesc) = 0;
     virtual void newShader(ShaderHandle handle, ShaderType type, const void* binData, uint32_t size) = 0;
+    virtual void newProgram(ProgramHandle handle, ShaderHandle vs, ShaderHandle fs) = 0;
     virtual void newBuffer(BufferHandle handle, const void* data, uint32_t size, BufferType type) = 0;
     virtual void newUniformBuffer(UniformBufferHandle handle, uint32_t size) = 0;
     virtual void newImage(ImageHandle handle, const void* data, uint32_t size, const TextureDesc& desc) = 0;

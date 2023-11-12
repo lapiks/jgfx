@@ -38,8 +38,8 @@ namespace jgfx::gl {
     _shaders[handle.id].create(type, size, binData);
   }
 
-  void RenderContextGL::newProgram(ProgramHandle handle) {
-    _programs[handle.id].create();
+  void RenderContextGL::newProgram(ProgramHandle handle, ShaderHandle vsHandle, ShaderHandle fsHandle) {
+    _programs[handle.id].create(_shaders[vsHandle.id], _shaders[fsHandle.id]);
   }
 
   void RenderContextGL::newBuffer(BufferHandle handle, const void* data, uint32_t size, BufferType type) {
@@ -110,16 +110,15 @@ namespace jgfx::gl {
   bool ShaderGL::create(ShaderType type, uint32_t size, const void* data) {
     const char* src = read(data, size).c_str();
 
-    unsigned int shader;
-    shader = glCreateShader(toGLShaderType(type));
-    glShaderSource(shader, 1, &src, NULL);
-    glCompileShader(shader);
+    _id = glCreateShader(toGLShaderType(type));
+    glShaderSource(_id, 1, &src, NULL);
+    glCompileShader(_id);
 
-    int  success;
+    int success;
     char infoLog[512];
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+    glGetShaderiv(_id, GL_COMPILE_STATUS, &success);
     if (!success) {
-      glGetShaderInfoLog(shader, 512, NULL, infoLog);
+      glGetShaderInfoLog(_id, 512, NULL, infoLog);
       //std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
       return false;
     }
@@ -128,26 +127,42 @@ namespace jgfx::gl {
   }
 
   void ShaderGL::destroy() {
+    glDeleteShader(_id);
   }
 
+  bool ProgramGL::create(const ShaderGL& vs, const ShaderGL& fs) {
+    _id = glCreateProgram();
+    glAttachShader(_id, vs._id);
+    glAttachShader(_id, fs._id);
+    glLinkProgram(_id);
+
+    int success;
+    char infoLog[512];
+    glGetProgramiv(_id, GL_LINK_STATUS, &success);
+    if (!success) {
+      glGetProgramInfoLog(_id, 512, NULL, infoLog);
+      return false;
+    }
+
+    return true;
+  }
+
+  void ProgramGL::destroy() {
+    glDeleteProgram(_id);
+  }
+
+
   bool BufferGL::create(uint32_t size, const void* data) {
-    unsigned int VBO;
-    glGenBuffers(1, &VBO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glGenBuffers(1, &_id);
+    glBindBuffer(GL_ARRAY_BUFFER, _id);
     glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     return true;
   }
 
+
   void BufferGL::destroy() {
+    glDeleteBuffers(1, &_id);
   }
-
-  bool ProgramGL::create() {
-    return false;
-  }
-
-  void ProgramGL::destroy() {
-  }
-
 }

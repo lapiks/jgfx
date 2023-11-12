@@ -11,21 +11,29 @@ namespace jgfx::gl {
   struct FramebufferGL {
     bool create();
     void destroy();
+
+    unsigned int _id;
   };
 
   struct ShaderGL {
     bool create(ShaderType type, uint32_t size, const void* data);
     void destroy();
+
+    unsigned int _id;
+  };
+
+  struct ProgramGL {
+    bool create(const ShaderGL& vs, const ShaderGL& fs);
+    void destroy();
+
+    unsigned int _id;
   };
 
   struct BufferGL {
     bool create(uint32_t size, const void* data);
     void destroy();
-  };
 
-  struct ProgramGL {
-    bool create();
-    void destroy();
+    unsigned int _id;
   };
 
   struct RenderContextGL : public RenderContext {
@@ -38,7 +46,7 @@ namespace jgfx::gl {
     void newPipeline(PipelineHandle handle, const PipelineDesc& pipelineDesc) override;
     void newPass(PassHandle handle, const PassDesc& passDesc) override;
     void newShader(ShaderHandle handle, ShaderType type, const void* binData, uint32_t size) override;
-    void newProgram(ProgramHandle handle);
+    void newProgram(ProgramHandle handle, ShaderHandle vsHandle, ShaderHandle fsHandle) override;
     void newBuffer(BufferHandle handle, const void* data, uint32_t size, BufferType type) override;
     void newUniformBuffer(UniformBufferHandle handle, uint32_t size) override;
     void newImage(ImageHandle handle, const void* data, uint32_t size, const TextureDesc& desc) override;

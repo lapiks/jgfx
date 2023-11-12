@@ -12,6 +12,7 @@ namespace jgfx {
     NewPipeline,
     NewPass,
     NewShader,
+    NewProgram,
     NewBuffer,
     NewUniformBuffer,
     NewImage,
@@ -98,6 +99,7 @@ namespace jgfx {
     PipelineHandle newPipeline(const PipelineDesc& pipelineDesc);
     PassHandle newPass(const PassDesc& passDesc);
     ShaderHandle newShader(ShaderType type, const void* binData, uint32_t size);
+    ProgramHandle newProgram(ShaderHandle vs, ShaderHandle fs);
     BufferHandle newBuffer(const void* data, uint32_t size, BufferType type);
     UniformBufferHandle newUniformBuffer(uint32_t size);
     ImageHandle newImage(const void* data, uint32_t size, const TextureDesc& desc);
@@ -126,6 +128,7 @@ namespace jgfx {
     HandleAllocator<PipelineHandle> pipelineHandleAlloc;
     HandleAllocator<PassHandle> passHandleAlloc;
     HandleAllocator<ShaderHandle> shaderHandleAlloc;
+    HandleAllocator<ProgramHandle> programHandleAlloc;
     HandleAllocator<FramebufferHandle> framebufferHandleAlloc;
     HandleAllocator<BufferHandle> bufferHandleAlloc;
     HandleAllocator<UniformBufferHandle> uniformBufferHandleAlloc;

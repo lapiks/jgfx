@@ -105,8 +105,7 @@ namespace jgfx {
   };
 
   struct PipelineDesc {
-    ShaderHandle vs;
-    ShaderHandle fs;
+    ProgramHandle program;
     VertexAttributes vertexAttributes;
     CullMode cullMode = FRONT;
     FaceWinding faceWinding = CLOCKWISE;
@@ -132,6 +131,7 @@ namespace jgfx {
     PipelineHandle newPipeline(const PipelineDesc& pipelineDesc);
     PassHandle newPass(const PassDesc& passDesc);
     ShaderHandle newShader(ShaderType type, const void* binData, uint32_t size);
+    ProgramHandle newProgram(ShaderHandle vs, ShaderHandle fs);
     BufferHandle newBuffer(const void* data, uint32_t size, BufferType type);
     ImageHandle newImage(const void* data, uint32_t size, const TextureDesc& desc);
     // Drawing
