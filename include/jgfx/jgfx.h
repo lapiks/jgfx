@@ -68,6 +68,7 @@ namespace jgfx {
   };
 
   JGFX_HANDLE(ShaderHandle)
+  JGFX_HANDLE(ProgramHandle)
   JGFX_HANDLE(PipelineHandle)
   JGFX_HANDLE(PassHandle)
   JGFX_HANDLE(FramebufferHandle)
