@@ -51,11 +51,12 @@ namespace jgfx {
     return handle;
   }
 
-  ShaderHandle ContextImpl::newShader(const void* binData, uint32_t size) {
+  ShaderHandle ContextImpl::newShader(ShaderType type, const void* binData, uint32_t size) {
     CommandBuffer& cmdBuf = startCommand(CommandType::NewShader);
     ShaderHandle handle;
     shaderHandleAlloc.allocate(handle);
     cmdBuf.write(handle);
+    cmdBuf.write(type);
     cmdBuf.write(binData);
     cmdBuf.write(size);
 
@@ -182,11 +183,13 @@ namespace jgfx {
       case NewShader: {
         ShaderHandle handle;
         _cmdBuffer.read(handle);
+        ShaderType type;
+        _cmdBuffer.read(type);
         void* data = nullptr;
         _cmdBuffer.read(data);
         uint32_t size;
         _cmdBuffer.read(size);
-        _ctx->newShader(handle, data, size);
+        _ctx->newShader(handle, type, data, size);
       }
         break;
       case NewBuffer: {

@@ -19,11 +19,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="3rdpaty\glad\src\glad.c" />
+    <ClCompile Include="3rdparty\glad\src\glad.c" />
     <ClCompile Include="src\jgfx.cpp" />
     <ClCompile Include="src\jgfx_impl.cpp" />
     <ClCompile Include="src\renderer_gl.cpp" />
     <ClCompile Include="src\renderer_vk.cpp" />
+    <ClCompile Include="src\spirv_reader.cpp" />
     <ClCompile Include="src\utils_vk.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -32,6 +33,7 @@
     <ClInclude Include="src\renderer.h" />
     <ClInclude Include="src\renderer_gl.h" />
     <ClInclude Include="src\renderer_vk.h" />
+    <ClInclude Include="src\spirv_reader.h" />
     <ClInclude Include="src\structs_vk.h" />
     <ClInclude Include="src\utils_vk.h" />
   </ItemGroup>
@@ -121,7 +123,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>include;C:\Program Files\VulkanSDK\1.3.261.1\Include;3rdpaty\glad\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>include;C:\Program Files\VulkanSDK\1.3.261.1\Include;3rdparty/SPIRV-Cross;3rdparty/glad/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
@@ -130,6 +132,10 @@
       <AdditionalLibraryDirectories>C:\Program Files\VulkanSDK\1.3.261.1\Lib;C:\Users\dheni\source\repos\jgfx\jgfx\3rdparty\glfw-3.3.8.bin.WIN64\lib-vc2022;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Lib>
+      <AdditionalDependencies>spirv-cross-glsld.lib;spirv-cross-cored.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>3rdparty/SPIRV-Cross/build/Debug</AdditionalLibraryDirectories>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -139,7 +145,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>include;C:\Program Files\VulkanSDK\1.3.261.1\Include;3rdpaty\glad\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>include;C:\Program Files\VulkanSDK\1.3.261.1\Include;3rdparty/SPIRV-Cross;3rdparty/glad/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
@@ -150,6 +156,10 @@
       <AdditionalLibraryDirectories>C:\Program Files\VulkanSDK\1.3.261.1\Lib;C:\Users\dheni\source\repos\jgfx\jgfx\3rdparty\glfw-3.3.8.bin.WIN64\lib-vc2022;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Lib>
+      <AdditionalDependencies>spirv-cross-glsl.lib;spirv-cross-core.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>3rdparty/SPIRV-Cross/build/Release</AdditionalLibraryDirectories>
+    </Lib>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

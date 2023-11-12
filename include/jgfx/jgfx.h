@@ -53,6 +53,12 @@ namespace jgfx {
     ALL,
   };
 
+  enum class ShaderType {
+    VERTEX,
+    FRAGMENT,
+    COMPUTE,
+  };
+
   enum CullMode {
     NONE,
     FRONT,
@@ -125,7 +131,7 @@ namespace jgfx {
     // Object creation
     PipelineHandle newPipeline(const PipelineDesc& pipelineDesc);
     PassHandle newPass(const PassDesc& passDesc);
-    ShaderHandle newShader(const void* binData, uint32_t size);
+    ShaderHandle newShader(ShaderType type, const void* binData, uint32_t size);
     BufferHandle newBuffer(const void* data, uint32_t size, BufferType type);
     ImageHandle newImage(const void* data, uint32_t size, const TextureDesc& desc);
     // Drawing

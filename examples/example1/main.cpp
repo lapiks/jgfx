@@ -126,7 +126,7 @@ public:
     pd.nativeWindowHandle = glfwGetWin32Window(window);
 
     jgfx::InitInfo initInfos;
-    initInfos.api = jgfx::GraphicsAPI::Vulkan;
+    initInfos.api = jgfx::GraphicsAPI::OpenGL;
     initInfos.platformData = pd;
     initInfos.extensionNames = extensions;
     initInfos.resolution = { WIDTH, HEIGHT };
@@ -145,8 +145,8 @@ public:
     _vertBin = utils::readFile("../shaders/vert.spv");
     _fragBin = utils::readFile("../shaders/frag.spv");
 
-    jgfx::ShaderHandle vs = ctx.newShader(_vertBin.data(), _vertBin.size());
-    jgfx::ShaderHandle fs = ctx.newShader(_fragBin.data(), _fragBin.size());
+    jgfx::ShaderHandle vs = ctx.newShader(jgfx::ShaderType::VERTEX, _vertBin.data(), _vertBin.size());
+    jgfx::ShaderHandle fs = ctx.newShader(jgfx::ShaderType::FRAGMENT, _fragBin.data(), _fragBin.size());
 
     utils::Image image;
     image.read("../assets/texture.jpg");

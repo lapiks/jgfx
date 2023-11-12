@@ -25,8 +25,8 @@ namespace jgfx
     return ctx.newPass(passDesc);
   }
 
-  ShaderHandle Context::newShader(const void* binData, uint32_t size) {
-    return ctx.newShader(binData, size);
+  ShaderHandle Context::newShader(ShaderType type, const void* binData, uint32_t size) {
+    return ctx.newShader(type, binData, size);
   }
 
   BufferHandle Context::newBuffer(const void* data, uint32_t size, BufferType type) {

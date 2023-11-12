@@ -146,7 +146,7 @@ namespace jgfx::vk {
     // ObjectVK creation
     void newPipeline(PipelineHandle handle, const PipelineDesc& pipelineDesc) override;
     void newPass(PassHandle handle, const PassDesc& passDesc) override;
-    void newShader(ShaderHandle handle, const void* binData, uint32_t size) override;
+    void newShader(ShaderHandle handle, ShaderType type, const void* binData, uint32_t size) override;
     void newBuffer(BufferHandle handle, const void* data, uint32_t size, BufferType type) override;
     void newUniformBuffer(UniformBufferHandle handle, uint32_t size) override;
     void newImage(ImageHandle handle, const void* data, uint32_t size, const TextureDesc& desc) override;

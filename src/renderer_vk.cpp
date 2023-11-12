@@ -272,7 +272,7 @@ namespace jgfx::vk {
     _swapChain._resolution = resolution;
   }
 
-  void RenderContextVK::newShader(ShaderHandle handle, const void* binData, uint32_t size) {
+  void RenderContextVK::newShader(ShaderHandle handle, ShaderType type, const void* binData, uint32_t size) {
     _shaders[handle.id].create(
       _device, 
       binData,

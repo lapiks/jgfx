@@ -14,12 +14,12 @@ namespace jgfx::gl {
   };
 
   struct ShaderGL {
-    bool create();
+    bool create(ShaderType type, uint32_t size, const void* data);
     void destroy();
   };
 
   struct BufferGL {
-    bool create();
+    bool create(uint32_t size, const void* data);
     void destroy();
   };
 
@@ -37,7 +37,7 @@ namespace jgfx::gl {
     // ObjectGL creation
     void newPipeline(PipelineHandle handle, const PipelineDesc& pipelineDesc) override;
     void newPass(PassHandle handle, const PassDesc& passDesc) override;
-    void newShader(ShaderHandle handle, const void* binData, uint32_t size) override;
+    void newShader(ShaderHandle handle, ShaderType type, const void* binData, uint32_t size) override;
     void newProgram(ProgramHandle handle);
     void newBuffer(BufferHandle handle, const void* data, uint32_t size, BufferType type) override;
     void newUniformBuffer(UniformBufferHandle handle, uint32_t size) override;
