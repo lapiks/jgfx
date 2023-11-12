@@ -195,10 +195,10 @@ public:
 
       // render code
       ctx.beginDefaultPass();
-      ctx.applyPipeline(_pipeline);
       ctx.applyBindings(_bindings);
+      ctx.applyPipeline(_pipeline);
       ctx.applyUniforms(jgfx::VERTEX, &_uniforms, sizeof(_uniforms));
-      ctx.drawIndexed(0, 36);
+      ctx.draw(0, 36);
       ctx.endPass();
       ctx.commitFrame();
 

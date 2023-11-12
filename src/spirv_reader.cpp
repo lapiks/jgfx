@@ -10,7 +10,7 @@ namespace jgfx {
 		// Set some options.
 		spirv_cross::CompilerGLSL::Options options;
 		options.version = 450;
-		options.es = true;
+		options.es = false;
 		glsl.set_common_options(options);
 
 		// Compile to GLSL, ready to give to GL driver.

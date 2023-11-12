@@ -1,5 +1,7 @@
 #include "renderer_gl.h"
 #include <glad/glad.h> 
+
+#include "jgfx/jgfx.h"
 #include "spirv_reader.h"
 
 namespace jgfx::gl {
@@ -13,13 +15,27 @@ namespace jgfx::gl {
     return -1;
   }
 
+  GLint getAttribTypeComponentsCount(AttribType type) {
+    switch (type) {
+    case AttribType::UNKNOWN: return 0;
+    case AttribType::FLOAT: return 1;
+    case AttribType::FLOAT2: return 2;
+    case AttribType::FLOAT3: return 3;
+    case AttribType::FLOAT4: return 4;
+    }
+
+    return 0;
+  }
+
   bool RenderContextGL::init(const InitInfo& createInfo) {
+    glGenVertexArrays(1, &_vao);
 
     return true;
   }
 
   void RenderContextGL::shutdown() {
-
+    glBindVertexArray(0);
+    glDeleteVertexArrays(1, &_vao);
   }
 
   void RenderContextGL::updateResolution(const Resolution& resolution) {
@@ -27,7 +43,7 @@ namespace jgfx::gl {
   }
 
   void RenderContextGL::newPipeline(PipelineHandle handle, const PipelineDesc& pipelineDesc) {
-
+    _pipelines[handle.id].create(pipelineDesc);
   }
 
   void RenderContextGL::newPass(PassHandle handle, const PassDesc& passDesc) {
@@ -65,11 +81,19 @@ namespace jgfx::gl {
   }
 
   void RenderContextGL::applyPipeline(PipelineHandle pipe) {
-
+    const PipelineGL& pipeline = _pipelines[pipe.id];
+    ProgramGL& program = _programs[pipeline._desc.program.id];
+    program.use();
+    //glBindVertexArray(_vao);
+    program.bindAttributes(pipeline._desc.vertexAttributes);
   }
 
   void RenderContextGL::applyBindings(const Bindings& bindings) {
-
+    const BufferGL& vb = _buffers[bindings.vertexBuffers[0].id];
+    const BufferGL& ib = _buffers[bindings.indexBuffer.id];
+    glBindVertexArray(_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, vb._id);
+    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ib._id);
   }
 
   void RenderContextGL::applyUniforms(ShaderStage stage, const void* data, uint32_t size) {
@@ -77,11 +101,11 @@ namespace jgfx::gl {
   }
 
   void RenderContextGL::draw(uint32_t firstVertex, uint32_t vertexCount) {
-
+    glDrawArrays(GL_TRIANGLES, firstVertex, vertexCount);
   }
 
   void RenderContextGL::drawIndexed(uint32_t firstIndex, uint32_t indexCount) {
-
+    glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, nullptr);
   }
 
   void RenderContextGL::endPass() {
@@ -89,8 +113,7 @@ namespace jgfx::gl {
   }
 
   void RenderContextGL::commitFrame() {
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+
   }
 
   bool TextureGL::create() {
@@ -108,7 +131,8 @@ namespace jgfx::gl {
   }
 
   bool ShaderGL::create(ShaderType type, uint32_t size, const void* data) {
-    const char* src = read(data, size).c_str();
+    std::string srcString = read(data, size);
+    const char* src = srcString.c_str();
 
     _id = glCreateShader(toGLShaderType(type));
     glShaderSource(_id, 1, &src, NULL);
@@ -151,6 +175,19 @@ namespace jgfx::gl {
     glDeleteProgram(_id);
   }
 
+  void ProgramGL::use() {
+    glUseProgram(_id);
+  }
+
+  void ProgramGL::bindAttributes(const VertexAttributes& attr) {
+    for (int i = 0; i < attr._attrCount; ++i)
+    {
+      GLint count = getAttribTypeComponentsCount(attr._types[i]);
+      glVertexAttribPointer(i, count, GL_FLOAT, GL_FALSE, attr._stride, (void*)0);
+      glEnableVertexAttribArray(i);
+    }
+  }
+
 
   bool BufferGL::create(uint32_t size, const void* data) {
     glGenBuffers(1, &_id);
@@ -163,6 +200,12 @@ namespace jgfx::gl {
 
 
   void BufferGL::destroy() {
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
     glDeleteBuffers(1, &_id);
+  }
+
+  bool PipelineGL::create(const PipelineDesc& desc) {
+    _desc = desc;
+    return true;
   }
 }

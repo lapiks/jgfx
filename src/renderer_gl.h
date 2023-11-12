@@ -25,6 +25,8 @@ namespace jgfx::gl {
   struct ProgramGL {
     bool create(const ShaderGL& vs, const ShaderGL& fs);
     void destroy();
+    void use();
+    void bindAttributes(const VertexAttributes& attr);
 
     unsigned int _id;
   };
@@ -34,6 +36,12 @@ namespace jgfx::gl {
     void destroy();
 
     unsigned int _id;
+  };
+
+  struct PipelineGL {
+    bool create(const PipelineDesc& desc);
+
+    PipelineDesc _desc;
   };
 
   struct RenderContextGL : public RenderContext {
@@ -62,10 +70,13 @@ namespace jgfx::gl {
     void endPass() override;
     void commitFrame() override;
 
+    unsigned int _vao; // default vao
+
     ShaderGL _shaders[MAX_SHADERS];
     ProgramGL _programs[MAX_PROGRAMS];
     BufferGL _buffers[MAX_BUFFERS];
     TextureGL _textures[MAX_IMAGES];
     FramebufferGL _framebuffer[MAX_FRAMEBUFFERS];
+    PipelineGL _pipelines[MAX_PIPELINES];
   };
 }
