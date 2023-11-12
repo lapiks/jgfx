@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="src\jgfx.cpp" />
     <ClCompile Include="src\jgfx_impl.cpp" />
+    <ClCompile Include="src\renderer_gl.cpp" />
     <ClCompile Include="src\renderer_vk.cpp" />
     <ClCompile Include="src\utils_vk.cpp" />
   </ItemGroup>
@@ -28,6 +29,7 @@
     <ClInclude Include="include\jgfx\jgfx.h" />
     <ClInclude Include="src\jgfx_impl.h" />
     <ClInclude Include="src\renderer.h" />
+    <ClInclude Include="src\renderer_gl.h" />
     <ClInclude Include="src\renderer_vk.h" />
     <ClInclude Include="src\structs_vk.h" />
     <ClInclude Include="src\utils_vk.h" />
